@@ -1,2 +1,3 @@
-pypdf
+pandas
+pypdf[full]
 streamlit-pdf-viewer
