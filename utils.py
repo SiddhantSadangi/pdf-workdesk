@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 
 def is_pdf_datetime(s: str) -> bool:
@@ -87,3 +87,15 @@ def extract_images(reader: PdfReader.pages, page_numbers_str: str = "all") -> st
             )
 
     return images
+
+
+def decrypt_pdf(reader: PdfReader, password: str, filename: str) -> None:
+    reader.decrypt(password)
+
+    writer = PdfWriter()
+
+    for page in reader.pages:
+        writer.add_page(page)
+
+    with open(filename, "wb") as f:
+        writer.write(f)

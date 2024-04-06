@@ -12,7 +12,7 @@ from streamlit_pdf_viewer import pdf_viewer
 
 import utils
 
-VERSION = "0.0.3"
+VERSION = "0.0.4"
 
 PAGE_STR_HELP = """
 Format
@@ -34,6 +34,24 @@ st.set_page_config(
     },
     layout="wide",
 )
+
+# ---------- INIT SESSION STATES ----------
+SESSION_STATES = (
+    "decrypted_filename",
+    "extract_text",
+    "extract_images",
+    "add_password",
+    "password",
+    "remove_password",
+)
+
+for state in SESSION_STATES:
+    if state in ("password"):
+        session_state[state] = ""
+    else:
+        session_state[state] = (
+            False if state not in session_state else session_state[state]
+        )
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
@@ -94,17 +112,20 @@ with st.sidebar:
             with st.expander("📄 **Preview**", expanded=bool(pdf)):
                 if reader.is_encrypted:
                     if password:
-                        reader.decrypt(password)
+                        session_state["decrypted_filename"] = (
+                            f"unprotected_{session_state['name']}"
+                        )
+                        utils.decrypt_pdf(
+                            reader,
+                            password,
+                            filename=session_state["decrypted_filename"],
+                        )
 
-                        writer = PdfWriter()
-
-                        for page in reader.pages:
-                            writer.add_page(page)
-
-                        with open("decrypted-pdf.pdf", "wb") as f:
-                            writer.write(f)
-
-                        pdf_viewer("decrypted-pdf.pdf", height=400, width=300)
+                        pdf_viewer(
+                            f"unprotected_{session_state['name']}",
+                            height=400,
+                            width=300,
+                        )
                     else:
                         st.error("Password required", icon="🔒")
                 else:
@@ -136,17 +157,6 @@ with st.sidebar:
 
 # ---------- HEADER ----------
 st.title("📄 Welcome to PDF WorkDesk!")
-
-# ---------- INIT SESSION STATES ----------
-SESSION_STATES = ("extract_text", "extract_images", "add_password", "password")
-
-for state in SESSION_STATES:
-    if state in ("password"):
-        session_state[state] = ""
-    else:
-        session_state[state] = (
-            False if state not in session_state else session_state[state]
-        )
 
 
 # ---------- FUNCTIONS ----------
@@ -285,6 +295,18 @@ if pdf:
                 file_name=filename,
                 use_container_width=True,
             )
+
+    with rcol.expander("🔓 Remove password", expanded=session_state.remove_password):
+        if reader.is_encrypted:
+            st.download_button(
+                "⬇️ Download unprotected PDF",
+                data=open(session_state["decrypted_filename"], "rb"),
+                mime="application/pdf",
+                file_name=session_state["decrypted_filename"],
+                use_container_width=True,
+            )
+        else:
+            st.info("PDF does not have a password")
 
 else:
     st.info("👈 Upload a PDF to start")
