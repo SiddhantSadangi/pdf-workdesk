@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Literal
 
 from pypdf import PdfReader
 
@@ -54,15 +55,35 @@ def parse_page_numbers(page_numbers_str):
     return [i - 1 for i in parsed_page_numbers]
 
 
-def extract_text(reader: PdfReader.pages, page_numbers_str: str = "all") -> str:
+def extract_text(
+    reader: PdfReader.pages,
+    page_numbers_str: str = "all",
+    mode: Literal["plain", "layout"] = "plain",
+) -> str:
     text = ""
 
     if page_numbers_str == "all":
         for page in reader.pages:
-            text = text + " " + page.extract_text()
+            text = text + " " + page.extract_text(extraction_mode=mode)
     else:
         pages = parse_page_numbers(page_numbers_str)
         for page in pages:
             text = text + " " + reader.pages[page].extract_text()
 
     return text
+
+
+def extract_images(reader: PdfReader.pages, page_numbers_str: str = "all") -> str:
+    images = {}
+    if page_numbers_str == "all":
+        for page in reader.pages:
+            images.update({image.data: image.name for image in page.images})
+
+    else:
+        pages = parse_page_numbers(page_numbers_str)
+        for page in pages:
+            images.update(
+                {image.data: image.name for image in reader.pages[page].images}
+            )
+
+    return images

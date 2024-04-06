@@ -1,4 +1,5 @@
 import contextlib
+import os
 from io import BytesIO
 
 import pandas as pd
@@ -9,9 +10,18 @@ from pypdf.errors import PdfStreamError
 from streamlit import session_state
 from streamlit_pdf_viewer import pdf_viewer
 
-from utils import convert_pdf_datetime, extract_text, is_pdf_datetime
+import utils
 
-VERSION = "0.0.0"
+VERSION = "0.0.2"
+
+PAGE_STR_HELP = """
+Format
+------
+**all:** all pages  
+**2:** 2nd page  
+**1-3:** pages 1 to 3  
+**2,4:** pages 2 and 4  
+**1-3,5:** pages 1 to 3 and 5"""
 
 st.set_page_config(
     page_title="PDF WorkDesk",
@@ -27,6 +37,16 @@ st.set_page_config(
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
+
+    # TODO: Update
+    with st.expander("✅ Supported operations"):
+        st.info(
+            "* Upload PDF or load from a URL\n"
+            "* Preview PDF contents and metadata\n"
+            "* Extract text and images\n"
+            "* Add password\n"
+        )
+
     pdf = None
     option = st.radio(
         label="Upload a PDF, or load image from a URL",
@@ -47,6 +67,7 @@ with st.sidebar:
             type=["pdf"],
         ):
             session_state["file"] = file
+            session_state["name"] = file.name
             pdf = file.getvalue()
             reader = PdfReader(BytesIO(pdf), password=password)
 
@@ -61,23 +82,24 @@ with st.sidebar:
             try:
                 response = requests.get(url)
                 session_state["file"] = pdf = response.content
+                session_state["name"] = url.split("/")[-1]
                 reader = PdfReader(BytesIO(pdf), password=password)
             except PdfStreamError:
                 st.error("The URL does not seem to be a valid PDF file.", icon="❌")
 
     if pdf:
         with contextlib.suppress(NameError):
-            with st.expander("**Preview**", expanded=bool(pdf)):
+            with st.expander("📄 **Preview**", expanded=bool(pdf)):
                 pdf_viewer(pdf, height=400, width=300)
 
-            with st.expander("**Metadata**"):
+            with st.expander("🗄️ **Metadata**"):
                 metadata = {}
                 metadata["Number of pages"] = len(reader.pages)
 
                 for k in reader.metadata:
                     value = reader.metadata[k]
-                    if is_pdf_datetime(value):
-                        value = convert_pdf_datetime(value)
+                    if utils.is_pdf_datetime(value):
+                        value = utils.convert_pdf_datetime(value)
 
                     metadata[k.replace("/", "")] = value
 
@@ -92,26 +114,21 @@ with st.sidebar:
         sidebar_html = sidebar_file.read().replace("{VERSION}", VERSION)
 
     # TODO: UPDATE
-    # with st.expander("Supported operations"):
-    #     st.info(
-    #         "* Upload image, take one with your camera, or load from a URL\n"
-    #         "* Crop\n"
-    #         "* Remove background\n"
-    #         "* Mirror\n"
-    #         "* Convert to grayscale or black and white\n"
-    #         "* Rotate\n"
-    #         "* Change brightness, saturation, contrast, sharpness\n"
-    #         "* Generate random image from supplied image\n"
-    #         "* Download results"
-    #     )
     st.components.v1.html(sidebar_html, height=750)
 
 # ---------- HEADER ----------
 st.title("📄 Welcome to PDF WorkDesk!")
 
 # ---------- INIT SESSION STATES ----------
-if "extract_text" not in session_state:
-    session_state["extract_text"] = False
+SESSION_STATES = ("extract_text", "extract_images", "add_password", "password")
+
+for state in SESSION_STATES:
+    if state in ("password"):
+        session_state[state] = ""
+    else:
+        session_state[state] = (
+            False if state not in session_state else session_state[state]
+        )
 
 
 # ---------- FUNCTIONS ----------
@@ -137,6 +154,7 @@ def _extract_text() -> None:
 
 
 # ---------- OPERATIONS ----------
+# TODO: Extract attachments (https://pypdf.readthedocs.io/en/stable/user/extract-attachments.html)
 # TODO: Undo last operation
 # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
 
@@ -146,22 +164,25 @@ if pdf:
 
     with lcol.expander(label="🔍 Extract text", expanded=session_state.extract_text):
 
-        page_numbers_str = st.text_input(
-            "Pages to extract?",
+        extract_text_lcol, extract_text_rcol = st.columns(2)
+
+        page_numbers_str = extract_text_lcol.text_input(
+            "Pages to extract from?",
             placeholder="all",
-            help="""
-            Format
-            ------
-            **all:** all pages
-            **2:** 2nd page
-            **1-3:** pages 1 to 3
-            **2,4:** pages 2 and 4
-            **1-3,5:** pages 1 to 3 and 5""",
+            help=PAGE_STR_HELP,
+            key="extract_text_pages",
         ).lower()
+
+        mode = extract_text_rcol.radio(
+            "Extraction mode",
+            options=["plain", "layout"],
+            horizontal=True,
+            help="Layout mode extracts text in a format resembling the layout of the source PDF",
+        )
 
         if page_numbers_str:
             try:
-                text = extract_text(reader, page_numbers_str)
+                text = utils.extract_text(reader, page_numbers_str, mode)
             except (IndexError, ValueError):
                 st.error("Specified pages don't exist. Check the format.", icon="⚠️")
             else:
@@ -177,13 +198,75 @@ if pdf:
                         use_container_width=True,
                     )
 
-    # TODO: Show only when the PDF has been updated
-    with open("updated-pdf.pdf", "rb") as f:
-        st.download_button(
-            "💾 Download updated PDF",
-            data=session_state.file,
-            mime="application/pdf",
-            use_container_width=True,
+    with rcol.expander(label="️🖼️ Extract images", expanded=session_state.extract_images):
+
+        page_numbers_str = st.text_input(
+            "Pages to extract from?",
+            placeholder="all",
+            help=PAGE_STR_HELP,
+            key="extract_image_pages",
+        ).lower()
+
+        if page_numbers_str:
+            try:
+                images = utils.extract_images(reader, page_numbers_str)
+            except (IndexError, ValueError):
+                st.error("Specified pages don't exist. Check the format.", icon="⚠️")
+            else:
+                if images:
+                    for data, name in images.items():
+                        st.image(data, caption=name)
+                else:
+                    st.info("No images found")
+
+    with lcol.expander("🔐 Add password", expanded=session_state.add_password):
+
+        session_state["password"] = st.text_input(
+            "Enter password",
+            type="password",
         )
+
+        algorithm = st.selectbox(
+            "Algorithm",
+            options=[
+                "RC4-40",
+                "RC4-128",
+                "AES-128",
+                "AES-256-R5",
+                "AES-256",
+            ],
+            index=3,
+            help="Use `RC4` for compatibility and `AES` for security",
+        )
+
+        filename = f"protected_{session_state['name']}"
+
+        if st.button(
+            "🔒 Submit",
+            use_container_width=True,
+            disabled=(len(session_state.password) == 0),
+        ):
+            writer = PdfWriter()
+
+            # Add all pages to the writer
+            for page in reader.pages:
+                writer.add_page(page)
+
+            # Add a password to the new PDF
+            writer.encrypt(session_state["password"], algorithm=algorithm)
+
+            # Save the new PDF to a file
+            with open(filename, "wb") as f:
+                writer.write(f)
+
+        if os.path.exists(filename):
+            st.download_button(
+                "⬇️ Download protected PDF",
+                data=open(filename, "rb"),
+                mime="application/pdf",
+                file_name=filename,
+                use_container_width=True,
+            )
+
 else:
     st.info("👈 Upload a PDF to start")
