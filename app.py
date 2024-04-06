@@ -6,13 +6,13 @@ import pandas as pd
 import requests
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
-from pypdf.errors import PdfStreamError
+from pypdf.errors import PdfReadError, PdfStreamError
 from streamlit import session_state
 from streamlit_pdf_viewer import pdf_viewer
 
 import utils
 
-VERSION = "0.0.4"
+VERSION = "0.0.5"
 
 PAGE_STR_HELP = """
 Format
@@ -103,7 +103,10 @@ with st.sidebar:
                 response = requests.get(url)
                 session_state["file"] = pdf = response.content
                 session_state["name"] = url.split("/")[-1]
-                reader = PdfReader(BytesIO(pdf), password=password)
+                try:
+                    reader = PdfReader(BytesIO(pdf), password=password)
+                except PdfReadError:
+                    reader = PdfReader(BytesIO(pdf))
             except PdfStreamError:
                 st.error("The URL does not seem to be a valid PDF file.", icon="❌")
 
