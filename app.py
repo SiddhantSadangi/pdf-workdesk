@@ -12,7 +12,7 @@ from streamlit_pdf_viewer import pdf_viewer
 
 import utils
 
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 
 PAGE_STR_HELP = """
 Format
@@ -58,7 +58,9 @@ with st.sidebar:
         help="All PDFs are deleted from the server when you\n* upload another PDF\n* clear the file uploader\n* close the browser tab",
     )
 
-    password = st.text_input("PDF Password", type="password", placeholder="Optional")
+    password = st.text_input(
+        "PDF Password", type="password", placeholder="Required if PDF is protected"
+    )
     password = password if password != "" else None
 
     if option == "Upload a PDF ⬆️":
@@ -90,7 +92,23 @@ with st.sidebar:
     if pdf:
         with contextlib.suppress(NameError):
             with st.expander("📄 **Preview**", expanded=bool(pdf)):
-                pdf_viewer(pdf, height=400, width=300)
+                if reader.is_encrypted:
+                    if password:
+                        reader.decrypt(password)
+
+                        writer = PdfWriter()
+
+                        for page in reader.pages:
+                            writer.add_page(page)
+
+                        with open("decrypted-pdf.pdf", "wb") as f:
+                            writer.write(f)
+
+                        pdf_viewer("decrypted-pdf.pdf", height=400, width=300)
+                    else:
+                        st.error("Password required", icon="🔒")
+                else:
+                    pdf_viewer(pdf, height=400, width=300)
 
             with st.expander("🗄️ **Metadata**"):
                 metadata = {}
