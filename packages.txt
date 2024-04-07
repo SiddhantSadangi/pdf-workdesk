@@ -1,1 +1,1 @@
-libjpeg-devel
+libjpeg-dev
