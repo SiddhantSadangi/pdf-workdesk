@@ -1,3 +1,4 @@
 pandas
+pillow
 pypdf[full]
 streamlit-pdf-viewer
