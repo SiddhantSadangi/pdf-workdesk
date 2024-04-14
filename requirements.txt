@@ -1,4 +1,5 @@
 pandas
 pillow
 pypdf[full]
+st-social-media-links
 streamlit-pdf-viewer
