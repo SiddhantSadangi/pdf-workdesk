@@ -2,13 +2,14 @@ import os
 import traceback
 
 import streamlit as st
-from pypdf import PdfWriter
+from pypdf import PaperSize, PdfWriter, Transformation
 from st_social_media_links import SocialMediaIcons
 from streamlit import session_state
+from streamlit_pdf_viewer import pdf_viewer
 
 import utils
 
-VERSION = "0.0.7"
+VERSION = "0.0.8"
 
 PAGE_STR_HELP = """
 Format
@@ -51,17 +52,18 @@ try:
 
     # ---------- SIDEBAR ----------
     with st.sidebar:
-
         # TODO: Update
         with st.expander("✅ Supported operations"):
             st.info(
-                "* Upload PDF or load from a URL\n"
-                "* Preview PDF contents and metadata\n"
-                "* Extract text and images\n"
-                "* Add and remove password\n"
+                "* Upload from disk/URL\n"
+                "* Preview content/metadata\n"
+                "* Extract text/images\n"
+                "* Add/remove password\n"
+                "* Rotate/resize PDF\n"
+                "* Merge PDFs\n"
             )
 
-        pdf, reader = utils.load_pdf()
+        pdf, reader = utils.load_pdf(key="main")
 
         with open("sidebar.html", "r", encoding="UTF-8") as sidebar_file:
             sidebar_html = sidebar_file.read().replace("{VERSION}", VERSION)
@@ -110,11 +112,9 @@ try:
     # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
 
     if pdf:
-
         lcol, rcol = st.columns(2)
 
         with lcol.expander(label="🔍 Extract text"):
-
             extract_text_lcol, extract_text_rcol = st.columns(2)
 
             page_numbers_str = extract_text_lcol.text_input(
@@ -150,7 +150,6 @@ try:
                         )
 
         with rcol.expander(label="️🖼️ Extract images"):
-
             page_numbers_str = st.text_input(
                 "Pages to extract from?",
                 placeholder="all",
@@ -171,7 +170,6 @@ try:
                         st.info("No images found")
 
         with lcol.expander("🔐 Add password"):
-
             session_state["password"] = st.text_input(
                 "Enter password",
                 type="password",
@@ -191,18 +189,17 @@ try:
                 use_container_width=True,
                 disabled=(len(session_state.password) == 0),
             ):
-                writer = PdfWriter()
+                with PdfWriter() as writer:
+                    # Add all pages to the writer
+                    for page in reader.pages:
+                        writer.add_page(page)
 
-                # Add all pages to the writer
-                for page in reader.pages:
-                    writer.add_page(page)
+                    # Add a password to the new PDF
+                    writer.encrypt(session_state["password"], algorithm=algorithm)
 
-                # Add a password to the new PDF
-                writer.encrypt(session_state["password"], algorithm=algorithm)
-
-                # Save the new PDF to a file
-                with open(filename, "wb") as f:
-                    writer.write(f)
+                    # Save the new PDF to a file
+                    with open(filename, "wb") as f:
+                        writer.write(f)
 
             if os.path.exists(filename):
                 st.download_button(
@@ -225,7 +222,110 @@ try:
             else:
                 st.info("PDF does not have a password")
 
-        # with st.expander("➕ Merge PDFs"):
+        with lcol.expander("🔃 Rotate PDF"):
+            st.caption("Will remove password if present")
+            angle = st.slider(
+                "Clockwise angle",
+                min_value=0,
+                max_value=360,
+                step=90,
+                format="%d°",
+            )
+
+            with PdfWriter() as writer:
+                for page in reader.pages:
+                    writer.add_page(page)
+                    writer.pages[-1].rotate(angle)
+
+                writer.write("rotated.pdf")
+
+                with open("rotated.pdf", "rb") as f:
+                    pdf_viewer(f.read(), height=250, width=300)
+                    st.download_button(
+                        "⬇️ Download rotated PDF",
+                        data=f,
+                        mime="application/pdf",
+                        file_name="rotated.pdf",
+                        use_container_width=True,
+                    )
+
+        with rcol.expander("↔ Resize/Scale PDF"):
+            st.caption("Will remove password if present")
+            new_size = st.selectbox(
+                "New size",
+                options={
+                    attr: getattr(PaperSize, attr)
+                    for attr in dir(PaperSize)
+                    if not attr.startswith("__")
+                    and not callable(getattr(PaperSize, attr))
+                },
+                index=4,
+                help="Changes will be apparant only on printing the PDF",
+            )
+
+            scale_content = st.slider(
+                "Scale content",
+                min_value=0.1,
+                max_value=2.0,
+                step=0.1,
+                value=1.0,
+                help="Scale content independently of the page size",
+                format="%fx",
+            )
+
+            with PdfWriter() as writer:
+                for page in reader.pages:
+                    page.scale_to(
+                        width=getattr(PaperSize, new_size).width,
+                        height=getattr(PaperSize, new_size).height,
+                    )
+                    op = Transformation().scale(sx=scale_content, sy=scale_content)
+                    page.add_transformation(op)
+                    writer.add_page(page)
+
+                writer.write("scaled.pdf")
+
+                with open("scaled.pdf", "rb") as f:
+                    st.caption("Content scaling preview")
+                    pdf_viewer(f.read(), height=250, width=300)
+                    st.download_button(
+                        "⬇️ Download scaled PDF",
+                        data=f,
+                        mime="application/pdf",
+                        file_name="scaled.pdf",
+                        use_container_width=True,
+                    )
+
+        with st.expander("➕ Merge PDFs"):
+            # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
+            pdf_to_merge, reader_to_merge = utils.load_pdf(key="merge")
+
+            col1, col2 = st.columns(2)
+
+            if col1.button(
+                "➕ Merge PDFs", disabled=(not pdf_to_merge), use_container_width=True
+            ):
+                with PdfWriter() as merger:
+                    for file in (reader, reader_to_merge):
+                        merger.append(file)
+                    merger.write("merged.pdf")
+                    col1.success(
+                        "Merged PDF saved as `merged.pdf`",
+                        icon="✅",
+                    )
+                    with col2:
+                        pdf_viewer(
+                            open("merged.pdf", "rb").read(),
+                            height=250,
+                            width=300,
+                        )
+                    st.download_button(
+                        "⬇️ Download merged PDF",
+                        data=open("merged.pdf", "rb"),
+                        mime="application/pdf",
+                        file_name="merged.pdf",
+                        use_container_width=True,
+                    )
 
     else:
         st.info("👈 Upload a PDF to start")

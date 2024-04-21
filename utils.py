@@ -13,10 +13,9 @@ from streamlit import session_state
 from streamlit_pdf_viewer import pdf_viewer
 
 
-def load_pdf() -> Optional[Tuple[bytes, PdfReader]]:
-    pdf = None
-    option = st.radio(
-        label="Upload a PDF, or load image from a URL",
+def get_option(key: Literal["main", "merge"]) -> str:
+    return st.radio(
+        label="Upload a PDF, or load PDF from a URL",
         options=(
             "Upload a PDF ⬆️",
             "Load PDF from a URL 🌐",
@@ -26,94 +25,171 @@ def load_pdf() -> Optional[Tuple[bytes, PdfReader]]:
         "* upload another PDF, or\n"
         "* clear the file uploader, or\n"
         "* close the browser tab.",
+        key=f"upload_{key}",
     )
 
+
+def get_password(key: Literal["main", "merge"]) -> Optional[str]:
     password = st.text_input(
-        "PDF Password", type="password", placeholder="Required if PDF is protected"
+        "PDF Password",
+        type="password",
+        placeholder="Required if PDF is protected",
+        key=f"password_{key}",
     )
-    password = password if password != "" else None
+    return password if password != "" else None
 
-    if option == "Upload a PDF ⬆️":
-        if file := st.file_uploader(
-            label="Upload a PDF",
-            type=["pdf"],
-        ):
-            session_state["file"] = file
-            session_state["name"] = file.name
-            pdf = file.getvalue()
+
+def upload_pdf(
+    key: Literal["main", "merge"], password: Optional[str]
+) -> Optional[Tuple[bytes, PdfReader]]:
+    if file := st.file_uploader(
+        label="Upload a PDF",
+        type=["pdf"],
+        key=f"file_{key}",
+    ):
+        session_state["file"] = file
+        session_state["name"] = file.name
+        pdf = file.getvalue()
+        try:
+            reader = PdfReader(BytesIO(pdf), password=password)
+        except PdfReadError:
+            reader = PdfReader(BytesIO(pdf))
+        return pdf, reader
+    return None, None
+
+
+def load_pdf_from_url(
+    key: Literal["main", "merge"], password: Optional[str]
+) -> Optional[Tuple[bytes, PdfReader]]:
+    url = st.text_input(
+        "PDF URL",
+        key=f"url_{key}",
+        value="https://getsamplefiles.com/download/pdf/sample-1.pdf",
+    )
+
+    if url != "":
+        try:
+            response = requests.get(url)
+            session_state["file"] = pdf = response.content
+            session_state["name"] = url.split("/")[-1]
             try:
                 reader = PdfReader(BytesIO(pdf), password=password)
             except PdfReadError:
                 reader = PdfReader(BytesIO(pdf))
-
-    elif option == "Load PDF from a URL 🌐":
-        url = st.text_input(
-            "PDF URL",
-            key="url",
-            value="https://getsamplefiles.com/download/pdf/sample-1.pdf",
-        )
-
-        if url != "":
-            try:
-                response = requests.get(url)
-                session_state["file"] = pdf = response.content
-                session_state["name"] = url.split("/")[-1]
-                try:
-                    reader = PdfReader(BytesIO(pdf), password=password)
-                except PdfReadError:
-                    reader = PdfReader(BytesIO(pdf))
-            except PdfStreamError:
-                st.error("The URL does not seem to be a valid PDF file.", icon="❌")
-
-    if pdf:
-        preview_pdf(pdf, reader, password)
-
-        return pdf, reader
-
+            return pdf, reader
+        except PdfStreamError:
+            st.error("The URL does not seem to be a valid PDF file.", icon="❌")
     return None, None
 
 
-def preview_pdf(pdf: bytes, reader: PdfReader, password: str = "") -> None:
-    with contextlib.suppress(NameError):
-        with st.expander("📄 **Preview**", expanded=bool(pdf)):
-            if reader.is_encrypted:
-                if password:
-                    session_state["decrypted_filename"] = (
-                        f"unprotected_{session_state['name']}"
-                    )
-                    decrypt_pdf(
-                        reader,
-                        password,
-                        filename=session_state["decrypted_filename"],
-                    )
+def load_pdf(
+    key: Literal["main", "merge"] = "main",
+) -> Optional[Tuple[bytes, PdfReader]]:
+    if key == "main":
+        pdf = None
+        option = get_option(key)
+        password = get_password(key)
 
-                    pdf_viewer(
-                        f"unprotected_{session_state['name']}",
-                        height=400,
-                        width=300,
-                    )
-                else:
-                    st.error("Password required", icon="🔒")
-            else:
-                pdf_viewer(pdf, height=400, width=300)
+        if option == "Upload a PDF ⬆️":
+            pdf, reader = upload_pdf(key, password)
+        elif option == "Load PDF from a URL 🌐":
+            pdf, reader = load_pdf_from_url(key, password)
 
-        with st.expander("🗄️ **Metadata**"):
-            metadata = {}
-            metadata["Number of pages"] = len(reader.pages)
-
-            for k in reader.metadata:
-                value = reader.metadata[k]
-                if is_pdf_datetime(value):
-                    value = convert_pdf_datetime(value)
-
-                metadata[k.replace("/", "")] = value
-
-            metadata = pd.DataFrame.from_dict(
-                metadata, orient="index", columns=["Value"]
+        if pdf:
+            preview_pdf(
+                pdf,
+                reader,
+                key,
+                password,
             )
-            metadata.index.name = "Metadata"
+            return pdf, reader
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            pdf = None
+            option = get_option(key)
+            password = get_password(key)
 
-            st.dataframe(metadata)
+            if option == "Upload a PDF ⬆️":
+                pdf, reader = upload_pdf(key, password)
+            elif option == "Load PDF from a URL 🌐":
+                pdf, reader = load_pdf_from_url(key, password)
+
+            if pdf:
+                with col2:
+                    preview_pdf(
+                        pdf,
+                        reader,
+                        key,
+                        password,
+                    )
+                    return pdf, reader
+    return None, None
+
+
+def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
+    if password:
+        session_state["decrypted_filename"] = f"unprotected_{session_state['name']}"
+        decrypt_pdf(
+            reader,
+            password,
+            filename=session_state["decrypted_filename"],
+        )
+        pdf_viewer(
+            f"unprotected_{session_state['name']}",
+            height=400 if key == "main" else 250,
+            width=300,
+        )
+    else:
+        st.error("Password required", icon="🔒")
+
+
+def handle_unencrypted_pdf(pdf: bytes, key: str) -> None:
+    pdf_viewer(
+        pdf,
+        height=400 if key == "main" else 250,
+        width=300,
+    )
+
+
+def display_metadata(reader: PdfReader) -> None:
+    metadata = {}
+    metadata["Number of pages"] = len(reader.pages)
+
+    for k in reader.metadata:
+        value = reader.metadata[k]
+        if is_pdf_datetime(value):
+            value = convert_pdf_datetime(value)
+
+        metadata[k.replace("/", "")] = value
+
+    metadata = pd.DataFrame.from_dict(metadata, orient="index", columns=["Value"])
+    metadata.index.name = "Metadata"
+
+    st.dataframe(metadata)
+
+
+def preview_pdf(
+    pdf: bytes,
+    reader: PdfReader,
+    key: Literal["main", "merge"] = "main",
+    password: str = "",
+) -> None:
+    with contextlib.suppress(NameError):
+        if key == "main":
+            with st.expander("📄 **Preview**", expanded=bool(pdf)):
+                if reader.is_encrypted:
+                    handle_encrypted_pdf(reader, password, key)
+                else:
+                    handle_unencrypted_pdf(pdf, key)
+
+            with st.expander("🗄️ **Metadata**"):
+                display_metadata(reader)
+        else:
+            if reader.is_encrypted:
+                handle_encrypted_pdf(reader, password, key)
+            else:
+                handle_unencrypted_pdf(pdf, key)
 
 
 def is_pdf_datetime(s: str) -> bool:
@@ -142,7 +218,6 @@ def convert_pdf_datetime(pdf_datetime: str) -> str:
 
 
 def parse_page_numbers(page_numbers_str):
-
     # Split the input string by comma or hyphen
     parts = page_numbers_str.split(",")
 
@@ -151,7 +226,6 @@ def parse_page_numbers(page_numbers_str):
 
     # Iterate over each part
     for part in parts:
-
         # Remove any leading/trailing spaces
         part = part.strip()
 
