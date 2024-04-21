@@ -282,7 +282,6 @@ try:
                     op = Transformation().scale(sx=scale_content, sy=scale_content)
                     page.add_transformation(op)
                     writer.add_page(page)
-
                 writer.write("scaled.pdf")
 
                 with open("scaled.pdf", "rb") as f:
@@ -308,11 +307,9 @@ try:
                 with PdfWriter() as merger:
                     for file in (reader, reader_to_merge):
                         merger.append(file)
+
                     merger.write("merged.pdf")
-                    col1.success(
-                        "Merged PDF saved as `merged.pdf`",
-                        icon="✅",
-                    )
+
                     with col2:
                         pdf_viewer(
                             open("merged.pdf", "rb").read(),
