@@ -14,7 +14,7 @@ try:
 
     import utils
 
-    VERSION = "0.0.9"
+    VERSION = "0.0.10"
 
     PAGE_STR_HELP = """
     Format
@@ -63,6 +63,7 @@ try:
                 "* Add/remove password\n"
                 "* Rotate/resize PDF\n"
                 "* Merge PDFs\n"
+                "* Reduce PDF size\n"
             )
 
         try:
@@ -258,7 +259,7 @@ try:
                         "⬇️ Download rotated PDF",
                         data=f,
                         mime="application/pdf",
-                        file_name="rotated.pdf",
+                        file_name=f"{session_state['name'].rsplit('.')[0]}_rotated_{angle}.pdf",
                         use_container_width=True,
                     )
 
@@ -305,7 +306,7 @@ try:
                         "⬇️ Download scaled PDF",
                         data=f,
                         mime="application/pdf",
-                        file_name="scaled.pdf",
+                        file_name=f"{session_state['name'].rsplit('.')[0]}_scaled_{new_size}_{scale_content}x.pdf",
                         use_container_width=True,
                     )
 
@@ -455,7 +456,7 @@ try:
                 "⬇️ Download smaller PDF",
                 data=pdf_small,
                 mime="application/pdf",
-                file_name=f"{filename}_small.pdf",
+                file_name=f"{filename}_reduced.pdf",
                 use_container_width=True,
             )
     else:
