@@ -1,55 +1,57 @@
-import os
-import traceback
-
 import streamlit as st
-from pypdf import PaperSize, PdfWriter, Transformation
-from st_social_media_links import SocialMediaIcons
-from streamlit import session_state
-from streamlit_pdf_viewer import pdf_viewer
-
-import utils
-
-VERSION = "0.0.8"
-
-PAGE_STR_HELP = """
-Format
-------
-**all:** all pages  
-**2:** 2nd page  
-**1-3:** pages 1 to 3  
-**2,4:** pages 2 and 4  
-**1-3,5:** pages 1 to 3 and 5"""
-
-st.set_page_config(
-    page_title="PDF WorkDesk",
-    page_icon="📄",
-    menu_items={
-        "About": f"PDF WorkDesk v{VERSION}  "
-        f"\nApp contact: [Siddhant Sadangi](mailto:siddhant.sadangi@gmail.com)",
-        "Report a Bug": "https://github.com/SiddhantSadangi/pdf-workdesk/issues/new",
-        "Get help": None,
-    },
-    layout="wide",
-)
-
-# ---------- HEADER ----------
-st.title("📄 Welcome to PDF WorkDesk!")
 
 try:
-    # ---------- INIT SESSION STATES ----------
-    SESSION_STATES = (
-        "decrypted_filename",
-        "password",
+    import os
+    import sys
+    import traceback
+    from io import BytesIO
+
+    from pypdf import PaperSize, PdfReader, PdfWriter, Transformation
+    from pypdf.errors import FileNotDecryptedError
+    from st_social_media_links import SocialMediaIcons
+    from streamlit import session_state
+    from streamlit_pdf_viewer import pdf_viewer
+
+    import utils
+
+    VERSION = "0.0.9"
+
+    PAGE_STR_HELP = """
+    Format
+    ------
+    **all:** all pages  
+    **2:** 2nd page  
+    **1-3:** pages 1 to 3  
+    **2,4:** pages 2 and 4  
+    **1-3,5:** pages 1 to 3 and 5"""
+
+    st.set_page_config(
+        page_title="PDF WorkDesk",
+        page_icon="📄",
+        menu_items={
+            "About": f"PDF WorkDesk v{VERSION}  "
+            f"\nApp contact: [Siddhant Sadangi](mailto:siddhant.sadangi@gmail.com)",
+            "Report a Bug": "https://github.com/SiddhantSadangi/pdf-workdesk/issues/new",
+            "Get help": None,
+        },
+        layout="wide",
     )
 
-    for state in SESSION_STATES:
-        if state in ("password"):
-            session_state[state] = ""
-        else:
-            session_state[state] = (
-                False if state not in session_state else session_state[state]
-            )
+    # ---------- HEADER ----------
+    st.title("📄 Welcome to PDF WorkDesk!")
 
+    # ---------- INIT SESSION STATES ----------
+    session_state["decrypted_filename"] = (
+        None
+        if "decrypted_filename" not in session_state
+        else session_state["decrypted_filename"]
+    )
+    session_state["password"] = (
+        "" if "password" not in session_state else session_state["password"]
+    )
+    session_state["is_encrypted"] = (
+        False if "is_encrypted" not in session_state else session_state["is_encrypted"]
+    )
     # ---------- SIDEBAR ----------
     with st.sidebar:
         # TODO: Update
@@ -63,7 +65,13 @@ try:
                 "* Merge PDFs\n"
             )
 
-        pdf, reader = utils.load_pdf(key="main")
+        try:
+            pdf, reader, session_state["password"], session_state["is_encrypted"] = (
+                utils.load_pdf(key="main")
+            )
+
+        except FileNotDecryptedError:
+            pdf = "password_required"
 
         with open("sidebar.html", "r", encoding="UTF-8") as sidebar_file:
             sidebar_html = sidebar_file.read().replace("{VERSION}", VERSION)
@@ -111,14 +119,16 @@ try:
     # TODO: Undo last operation
     # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
 
-    if pdf:
+    if pdf == "password_required":
+        st.error("PDF is password protected. Please enter the password to proceed.")
+    elif pdf:
         lcol, rcol = st.columns(2)
 
         with lcol.expander(label="🔍 Extract text"):
             extract_text_lcol, extract_text_rcol = st.columns(2)
 
             page_numbers_str = extract_text_lcol.text_input(
-                "Pages to extract from?",
+                "Pages to extract test from?",
                 placeholder="all",
                 help=PAGE_STR_HELP,
                 key="extract_text_pages",
@@ -151,7 +161,7 @@ try:
 
         with rcol.expander(label="️🖼️ Extract images"):
             page_numbers_str = st.text_input(
-                "Pages to extract from?",
+                "Pages to extract images from?",
                 placeholder="all",
                 help=PAGE_STR_HELP,
                 key="extract_image_pages",
@@ -169,8 +179,10 @@ try:
                     else:
                         st.info("No images found")
 
-        with lcol.expander("🔐 Add password"):
-            session_state["password"] = st.text_input(
+        with lcol.expander(
+            f"🔐 {'Change' if session_state['is_encrypted'] else 'Add'} password"
+        ):
+            new_password = st.text_input(
                 "Enter password",
                 type="password",
             )
@@ -187,7 +199,7 @@ try:
             if st.button(
                 "🔒 Submit",
                 use_container_width=True,
-                disabled=(len(session_state.password) == 0),
+                disabled=(len(new_password) == 0),
             ):
                 with PdfWriter() as writer:
                     # Add all pages to the writer
@@ -195,7 +207,7 @@ try:
                         writer.add_page(page)
 
                     # Add a password to the new PDF
-                    writer.encrypt(session_state["password"], algorithm=algorithm)
+                    writer.encrypt(new_password, algorithm=algorithm)
 
                     # Save the new PDF to a file
                     with open(filename, "wb") as f:
@@ -295,9 +307,38 @@ try:
                         use_container_width=True,
                     )
 
+        # with st.expander("©️ Add watermark"):
+        # TODO: Add watermark (convert pdf to image and then back to pdf with watermark)
+        #     # TODO: Transform watermark before adding (https://pypdf.readthedocs.io/en/stable/user/add-watermark.html#stamp-overlay-watermark-underlay)
+
+        #     col1, col2 = st.columns(2)
+
+        #     image = col1.file_uploader(
+        #         "Upload image",
+        #         type=["png", "jpg", "jpeg", "webp", "bmp"],
+        #     )
+
+        #     if image:
+        #         col2.image(image, caption="Uploaded image", use_column_width=True)
+
+        #         utils.watermark_img(
+        #             reader,
+        #             image,
+        #         )
+
+        #         pdf_viewer("watermarked.pdf", height=400, width=500)
+
+        #         st.download_button(
+        #             "⬇️ Download watermarked PDF",
+        #             data=open("watermarked.pdf", "rb"),
+        #             mime="application/pdf",
+        #             file_name="watermarked.pdf",
+        #             use_container_width=True,
+        #         )
+
         with st.expander("➕ Merge PDFs"):
             # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
-            pdf_to_merge, reader_to_merge = utils.load_pdf(key="merge")
+            pdf_to_merge, reader_to_merge, *_ = utils.load_pdf(key="merge")
 
             col1, col2 = st.columns(2)
 
@@ -324,6 +365,92 @@ try:
                         use_container_width=True,
                     )
 
+        with st.expander("🤏 Reduce PDF size"):
+            pdf_small = pdf
+
+            lcol, mcol, rcol = st.columns(3)
+
+            with lcol:
+                remove_duplication = st.checkbox(
+                    "Remove duplication",
+                    help="""
+                    Some PDF documents contain the same object multiple times.  
+                    For example, if an image appears three times in a PDF it could be embedded three times. 
+                    Or it can be embedded once and referenced twice.  
+                    **Note:** This option will not remove objects, rather it will use a reference to the original object for subsequent uses.
+                    """,
+                )
+
+                remove_images = st.checkbox(
+                    "Remove images",
+                    help="Remove images from the PDF. Will also remove duplication.",
+                )
+
+                if remove_images or remove_duplication:
+                    pdf_small = utils.remove_images(
+                        pdf,
+                        remove_images=remove_images,
+                        password=session_state.password,
+                    )
+
+                if st.checkbox(
+                    "Reduce image quality",
+                    help="""
+                    Reduce the quality of images in the PDF. Will also remove duplication.  
+                    May not work for all cases.
+                    """,
+                    disabled=remove_images,
+                ):
+                    quality = st.slider(
+                        "Quality",
+                        min_value=0,
+                        max_value=100,
+                        value=50,
+                        disabled=remove_images,
+                    )
+                    pdf_small = utils.reduce_image_quality(
+                        pdf_small,
+                        quality,
+                        password=session_state.password,
+                    )
+
+                if st.checkbox(
+                    "Lossless compression",
+                    help="Compress PDF without losing quality",
+                ):
+                    pdf_small = utils.compress_pdf(
+                        pdf_small, password=session_state.password
+                    )
+
+                original_size = sys.getsizeof(pdf)
+                reduced_size = sys.getsizeof(pdf_small)
+                st.caption(
+                    f"Reduction: {100 - (reduced_size / original_size) * 100:.2f}%"
+                )
+
+            with mcol:
+                st.caption(f"Original size: {original_size / 1024:.2f} KB")
+                utils.preview_pdf(
+                    reader,
+                    pdf,
+                    key="other",
+                    password=session_state.password,
+                )
+            with rcol:
+                st.caption(f"Reduced size: {reduced_size / 1024:.2f} KB")
+                utils.preview_pdf(
+                    PdfReader(BytesIO(pdf_small)),
+                    pdf_small,
+                    key="other",
+                    password=session_state.password,
+                )
+            st.download_button(
+                "⬇️ Download smaller PDF",
+                data=pdf_small,
+                mime="application/pdf",
+                file_name=f"{filename}_small.pdf",
+                use_container_width=True,
+            )
     else:
         st.info("👈 Upload a PDF to start")
 
@@ -341,3 +468,5 @@ st.success(
     "[Star the repo](https://github.com/SiddhantSadangi/pdf-workdesk) to show your :heart:",
     icon="⭐",
 )
+
+# TODO: Add password back to converted PDF if original was protected
