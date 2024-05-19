@@ -235,6 +235,7 @@ try:
                 st.info("PDF does not have a password")
 
         with lcol.expander("🔃 Rotate PDF"):
+            # TODO: Add password back to converted PDF if original was protected
             st.caption("Will remove password if present")
             angle = st.slider(
                 "Clockwise angle",
@@ -262,6 +263,7 @@ try:
                     )
 
         with rcol.expander("↔ Resize/Scale PDF"):
+            # TODO: Add password back to converted PDF if original was protected
             st.caption("Will remove password if present")
             new_size = st.selectbox(
                 "New size",
@@ -337,6 +339,8 @@ try:
         #         )
 
         with st.expander("➕ Merge PDFs"):
+            # TODO: Add password back to converted PDF if original was protected
+            st.caption("Will remove passwords from both PDFs if present")
             # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
             pdf_to_merge, reader_to_merge, *_ = utils.load_pdf(key="merge")
 
@@ -366,6 +370,9 @@ try:
                     )
 
         with st.expander("🤏 Reduce PDF size"):
+            # TODO: Add password back to converted PDF if original was protected
+            st.caption("Will remove password if present")
+
             pdf_small = pdf
 
             lcol, mcol, rcol = st.columns(3)
@@ -468,5 +475,3 @@ st.success(
     "[Star the repo](https://github.com/SiddhantSadangi/pdf-workdesk) to show your :heart:",
     icon="⭐",
 )
-
-# TODO: Add password back to converted PDF if original was protected
