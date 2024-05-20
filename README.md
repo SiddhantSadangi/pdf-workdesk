@@ -1,4 +1,5 @@
 # PDF WorkDesk
+![image](https://github.com/SiddhantSadangi/pdf-workdesk/assets/41324509/c9024b47-cda5-4fd8-9016-ca27962116d3)
 
 A lightweight PDF-processing Streamlit app that supports the following operations:
 
