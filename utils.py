@@ -43,6 +43,7 @@ def watermark_img(
             stamp_page, Transformation(), expand=True, over=False
         )
 
+    # TODO: Write to byte_stream
     with open("watermarked.pdf", "wb") as fp:
         writer.write(fp)
 

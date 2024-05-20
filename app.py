@@ -14,7 +14,7 @@ try:
 
     import utils
 
-    VERSION = "0.0.10"
+    VERSION = "0.1.0"
 
     PAGE_STR_HELP = """
     Format
@@ -251,6 +251,7 @@ try:
                     writer.add_page(page)
                     writer.pages[-1].rotate(angle)
 
+                # TODO: Write to byte_stream
                 writer.write("rotated.pdf")
 
                 with open("rotated.pdf", "rb") as f:
@@ -297,6 +298,8 @@ try:
                     op = Transformation().scale(sx=scale_content, sy=scale_content)
                     page.add_transformation(op)
                     writer.add_page(page)
+
+                # TODO: Write to byte_stream
                 writer.write("scaled.pdf")
 
                 with open("scaled.pdf", "rb") as f:
@@ -341,7 +344,9 @@ try:
 
         with st.expander("➕ Merge PDFs"):
             # TODO: Add password back to converted PDF if original was protected
-            st.caption("Will remove passwords from both PDFs if present")
+            st.caption(
+                "Second PDF will be appended to the first. Passwords will be removed from both."
+            )
             # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
             pdf_to_merge, reader_to_merge, *_ = utils.load_pdf(key="merge")
 
@@ -354,6 +359,7 @@ try:
                     for file in (reader, reader_to_merge):
                         merger.append(file)
 
+                    # TODO: Write to byte_stream
                     merger.write("merged.pdf")
 
                     with col2:
