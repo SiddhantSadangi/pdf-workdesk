@@ -27,6 +27,11 @@ Your feedback and contributions can help shape the future of PDF WorkDesk. If yo
 - **Contribute**: Submit PRs or open issues on GitHub.
 - **Connect**: Have questions or suggestions? Reach out to me on [LinkedIn](https://linkedin.com/in/siddhantsadangi).
 
+## Acknowledgements 🤗
+This app is based on [PyPDF](https://github.com/py-pdf/pypdf) and basically provides a UI for non-technical users to use supported features of PyPDF. Thanks to the PyPDF team 🫶  
+Also, thanks as usual to the team behind and the community surrounding [Streamlit](https://streamlit.io/) 🎈  
+Finally, to all open-source projects out there used either directly or indirectly 🙇  
+
 ## Support PDF WorkDesk 💖
 Love PDF WorkDesk? Here's how you can show your support:
 
