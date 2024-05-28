@@ -6,6 +6,7 @@ try:
     import traceback
     from io import BytesIO
 
+    import streamlit_analytics2 as streamlit_analytics
     from pypdf import PaperSize, PdfReader, PdfWriter, Transformation
     from pypdf.errors import FileNotDecryptedError
     from st_social_media_links import SocialMediaIcons
@@ -14,7 +15,7 @@ try:
 
     import utils
 
-    VERSION = "0.2.0"
+    VERSION = "0.3.0"
 
     PAGE_STR_HELP = """
     Format
@@ -36,6 +37,8 @@ try:
         },
         layout="wide",
     )
+
+    streamlit_analytics.track(unsafe_password=st.secrets["analytics_password"])
 
     # ---------- HEADER ----------
     st.title("📄 Welcome to PDF WorkDesk!")
@@ -479,3 +482,4 @@ st.success(
     "[Star the repo](https://github.com/SiddhantSadangi/pdf-workdesk) to show your :heart:",
     icon="⭐",
 )
+streamlit_analytics.stop_tracking()

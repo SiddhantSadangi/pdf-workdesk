@@ -3,3 +3,4 @@ pillow
 pypdf[full]
 st-social-media-links
 streamlit-pdf-viewer
+streamlit_analytics2
