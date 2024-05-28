@@ -14,7 +14,7 @@ try:
 
     import utils
 
-    VERSION = "0.1.0"
+    VERSION = "0.2.0"
 
     PAGE_STR_HELP = """
     Format
@@ -54,7 +54,6 @@ try:
     )
     # ---------- SIDEBAR ----------
     with st.sidebar:
-        # TODO: Update
         with st.expander("✅ Supported operations"):
             st.info(
                 "* Upload from disk/URL\n"
@@ -161,14 +160,12 @@ try:
                         )
 
         with rcol.expander(label="️🖼️ Extract images"):
-            page_numbers_str = st.text_input(
+            if page_numbers_str := st.text_input(
                 "Pages to extract images from?",
                 placeholder="all",
                 help=PAGE_STR_HELP,
                 key="extract_image_pages",
-            ).lower()
-
-            if page_numbers_str:
+            ).lower():
                 try:
                     images = utils.extract_images(reader, page_numbers_str)
                 except (IndexError, ValueError):
