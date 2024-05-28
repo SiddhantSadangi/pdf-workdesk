@@ -17,6 +17,7 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 from streamlit_pdf_viewer import pdf_viewer
 
 
+@st.cache_data
 def image_to_pdf(stamp_img: Union[Path, str]) -> PdfReader:
     img = Image.open(stamp_img)
     img_as_pdf = BytesIO()
@@ -24,6 +25,7 @@ def image_to_pdf(stamp_img: Union[Path, str]) -> PdfReader:
     return PdfReader(img_as_pdf)
 
 
+@st.cache_data
 def watermark_img(
     reader: PdfReader,
     stamp_img: UploadedFile,
@@ -102,9 +104,13 @@ def load_pdf_from_url(
         value="https://getsamplefiles.com/download/pdf/sample-1.pdf",
     )
 
+    @st.cache_data
+    def _cached_get_url(url: str) -> requests.Response:
+        return requests.get(url)
+
     if url != "":
         try:
-            response = requests.get(url)
+            response = _cached_get_url(url)
             session_state["file"] = pdf = response.content
             session_state["name"] = url.split("/")[-1]
             try:
@@ -129,10 +135,7 @@ def load_pdf(
         "Load PDF from a URL 🌐": load_pdf_from_url,
     }
 
-    # Get the function for the selected option
-    function = option_functions.get(option)
-
-    if function:
+    if function := option_functions.get(option):
         pdf, reader = function(key, password)
 
         if pdf:
@@ -175,9 +178,7 @@ def handle_unencrypted_pdf(pdf: bytes, key: str) -> None:
 
 
 def display_metadata(reader: PdfReader) -> None:
-    metadata = {}
-    metadata["Number of pages"] = len(reader.pages)
-
+    metadata = {"Number of pages": len(reader.pages)}
     for k in reader.metadata:
         value = reader.metadata[k]
         if is_pdf_datetime(value):
@@ -207,18 +208,19 @@ def preview_pdf(
 
             with st.expander("🗄️ **Metadata**"):
                 display_metadata(reader)
+        elif reader.is_encrypted:
+            handle_encrypted_pdf(reader, password, key)
         else:
-            if reader.is_encrypted:
-                handle_encrypted_pdf(reader, password, key)
-            else:
-                handle_unencrypted_pdf(pdf, key)
+            handle_unencrypted_pdf(pdf, key)
 
 
+@st.cache_data
 def is_pdf_datetime(s: str) -> bool:
     pattern = r"^D:\d{14}\+\d{2}\'\d{2}\'$"
     return bool(re.match(pattern, s))
 
 
+@st.cache_data
 def convert_pdf_datetime(pdf_datetime: str) -> str:
     # Remove the 'D:' at the beginning
     pdf_datetime = pdf_datetime[2:]
@@ -228,17 +230,15 @@ def convert_pdf_datetime(pdf_datetime: str) -> str:
     time_str = pdf_datetime[8:14]
     tz_str = pdf_datetime[14:]
 
-    # Convert the date and time to a datetime object
-    dt = (
+    return (
         datetime.strptime(date_str + time_str, "%Y%m%d%H%M%S").strftime(
             "%Y-%m-%d %H:%M:%S "
         )
         + tz_str
     )
 
-    return dt
 
-
+@st.cache_data
 def parse_page_numbers(page_numbers_str):
     # Split the input string by comma or hyphen
     parts = page_numbers_str.split(",")
@@ -284,7 +284,7 @@ def extract_images(reader: PdfReader.pages, page_numbers_str: str = "all") -> st
     images = {}
     if page_numbers_str == "all":
         for page in reader.pages:
-            images.update({image.data: image.name for image in page.images})
+            images |= {image.data: image.name for image in page.images}
 
     else:
         pages = parse_page_numbers(page_numbers_str)
@@ -308,6 +308,7 @@ def decrypt_pdf(reader: PdfReader, password: str, filename: str) -> None:
         writer.write(f)
 
 
+@st.cache_data
 def remove_images(pdf: bytes, remove_images: bool, password: str) -> bytes:
     reader = PdfReader(BytesIO(pdf))
 
@@ -357,6 +358,7 @@ def reduce_image_quality(pdf: bytes, quality: int, password: str) -> bytes:
     return bytes_stream.getvalue()
 
 
+@st.cache_data
 def compress_pdf(pdf: bytes, password: str) -> bytes:
     reader = PdfReader(BytesIO(pdf))
 
