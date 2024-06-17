@@ -1,4 +1,5 @@
 pandas
+pdf2docx
 pillow
 pypdf[full]
 st-social-media-links
