@@ -6,6 +6,7 @@ try:
     import traceback
     from io import BytesIO
 
+    from pdf2docx import Converter
     from pypdf import PaperSize, PdfReader, PdfWriter, Transformation
     from pypdf.errors import FileNotDecryptedError
     from st_social_media_links import SocialMediaIcons
@@ -14,7 +15,7 @@ try:
 
     import utils
 
-    VERSION = "0.3.1"
+    VERSION = "0.4.0"
 
     PAGE_STR_HELP = """
     Format
@@ -62,13 +63,17 @@ try:
                 "* Add/remove password\n"
                 "* Rotate/resize PDF\n"
                 "* Merge PDFs\n"
+                "* Convert PDF to Word\n"
                 "* Reduce PDF size\n"
             )
 
         try:
-            pdf, reader, session_state["password"], session_state["is_encrypted"] = (
-                utils.load_pdf(key="main")
-            )
+            (
+                pdf,
+                reader,
+                session_state["password"],
+                session_state["is_encrypted"],
+            ) = utils.load_pdf(key="main")
 
         except FileNotDecryptedError:
             pdf = "password_required"
@@ -213,7 +218,7 @@ try:
 
             if os.path.exists(filename):
                 st.download_button(
-                    "⬇️ Download protected PDF",
+                    "📥 Download protected PDF",
                     data=open(filename, "rb"),
                     mime="application/pdf",
                     file_name=filename,
@@ -223,7 +228,7 @@ try:
         with rcol.expander("🔓 Remove password"):
             if reader.is_encrypted:
                 st.download_button(
-                    "⬇️ Download unprotected PDF",
+                    "📥 Download unprotected PDF",
                     data=open(session_state["decrypted_filename"], "rb"),
                     mime="application/pdf",
                     file_name=session_state["decrypted_filename"],
@@ -238,7 +243,7 @@ try:
             angle = st.slider(
                 "Clockwise angle",
                 min_value=0,
-                max_value=360,
+                max_value=270,
                 step=90,
                 format="%d°",
             )
@@ -254,7 +259,7 @@ try:
                 with open("rotated.pdf", "rb") as f:
                     pdf_viewer(f.read(), height=250, width=300)
                     st.download_button(
-                        "⬇️ Download rotated PDF",
+                        "📥 Download rotated PDF",
                         data=f,
                         mime="application/pdf",
                         file_name=f"{session_state['name'].rsplit('.')[0]}_rotated_{angle}.pdf",
@@ -303,7 +308,7 @@ try:
                     st.caption("Content scaling preview")
                     pdf_viewer(f.read(), height=250, width=300)
                     st.download_button(
-                        "⬇️ Download scaled PDF",
+                        "📥 Download scaled PDF",
                         data=f,
                         mime="application/pdf",
                         file_name=f"{session_state['name'].rsplit('.')[0]}_scaled_{new_size}_{scale_content}x.pdf",
@@ -332,14 +337,14 @@ try:
         #         pdf_viewer("watermarked.pdf", height=400, width=500)
 
         #         st.download_button(
-        #             "⬇️ Download watermarked PDF",
+        #             "📥 Download watermarked PDF",
         #             data=open("watermarked.pdf", "rb"),
         #             mime="application/pdf",
         #             file_name="watermarked.pdf",
         #             use_container_width=True,
         #         )
 
-        with st.expander("➕ Merge PDFs"):
+        with lcol.expander("➕ Merge PDFs"):
             # TODO: Add password back to converted PDF if original was protected
             st.caption(
                 "Second PDF will be appended to the first. Passwords will be removed from both."
@@ -347,9 +352,7 @@ try:
             # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
             pdf_to_merge, reader_to_merge, *_ = utils.load_pdf(key="merge")
 
-            col1, col2 = st.columns(2)
-
-            if col1.button(
+            if st.button(
                 "➕ Merge PDFs", disabled=(not pdf_to_merge), use_container_width=True
             ):
                 with PdfWriter() as merger:
@@ -359,19 +362,37 @@ try:
                     # TODO: Write to byte_stream
                     merger.write("merged.pdf")
 
-                    with col2:
-                        pdf_viewer(
-                            open("merged.pdf", "rb").read(),
-                            height=250,
-                            width=300,
-                        )
+                    pdf_viewer(
+                        open("merged.pdf", "rb").read(),
+                        height=250,
+                        width=300,
+                    )
                     st.download_button(
-                        "⬇️ Download merged PDF",
+                        "📥 Download merged PDF",
                         data=open("merged.pdf", "rb"),
                         mime="application/pdf",
                         file_name="merged.pdf",
                         use_container_width=True,
                     )
+
+        with rcol.expander("🔄️ Convert to Word"):
+            st.caption("Takes ~1 second/page. Will remove password if present")
+
+            if st.button("Convert PDF to Word", use_container_width=True):
+                cv = Converter(stream=pdf, password=session_state.password)
+                docx_stream = BytesIO()
+                cv.convert(docx_stream, start=0, end=None)
+                cv.close()
+
+                docx_stream.seek(0)
+
+                st.download_button(
+                    "📥 Download Word document",
+                    data=docx_stream,
+                    file_name=f"{session_state['name'][:-4]}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                )
 
         with st.expander("🤏 Reduce PDF size"):
             # TODO: Add password back to converted PDF if original was protected
@@ -456,12 +477,13 @@ try:
                     password=session_state.password,
                 )
             st.download_button(
-                "⬇️ Download smaller PDF",
+                "📥 Download smaller PDF",
                 data=pdf_small,
                 mime="application/pdf",
                 file_name=f"{filename}_reduced.pdf",
                 use_container_width=True,
             )
+
     else:
         st.info("👈 Upload a PDF to start")
 
