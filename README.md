@@ -1,5 +1,5 @@
 # PDF WorkDesk 📄✨
-[![image](https://github.com/SiddhantSadangi/pdf-workdesk/assets/41324509/c9024b47-cda5-4fd8-9016-ca27962116d3)](https://pdfworkdesk.streamlit.app/)
+[![image](https://github.com/SiddhantSadangi/pdf-workdesk/assets/41324509/862ccb36-b616-4f09-a1cb-593ea1edbf4c)](https://pdfworkdesk.streamlit.app/)
 
 Welcome to **PDF WorkDesk**, the ultimate open-source Streamlit app for all your PDF processing needs! 
 
@@ -30,6 +30,9 @@ Your feedback and contributions can help shape the future of PDF WorkDesk. If yo
 ## Acknowledgements 🤗
 This app is based on [pypdf](https://github.com/py-pdf/pypdf) and basically provides a UI for non-technical users to use supported features of pypdf. Thanks to the pypdf team 🫶  
 Also, thanks as usual to the team behind and the community surrounding [Streamlit](https://streamlit.io/) 🎈  
+
+Special thanks to [Pierre-Louis BESCOND](https://github.com/pierrelouisbescond) for contributing the PDF to Word conversion code 🙏
+
 Finally, to all open-source projects out there used either directly or indirectly 🙇  
 
 ## Support PDF WorkDesk 💖
