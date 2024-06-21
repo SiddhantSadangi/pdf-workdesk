@@ -15,7 +15,7 @@ try:
 
     import utils
 
-    VERSION = "0.4.0"
+    VERSION = "0.4.1"
 
     PAGE_STR_HELP = """
     Format
@@ -39,7 +39,10 @@ try:
     )
 
     # ---------- HEADER ----------
-    st.title("📄 Welcome to PDF WorkDesk!")
+    st.title("📄 PDF WorkDesk!")
+    st.caption(
+        "User-friendly, lightweight, and open-source tool to preview and extract content and metadata from PDFs, add or remove passwords, modify, merge, convert and compress PDFs."
+    )
 
     # ---------- INIT SESSION STATES ----------
     session_state["decrypted_filename"] = (
