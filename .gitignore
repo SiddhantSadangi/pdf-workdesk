@@ -4,5 +4,5 @@
 /final_image.png
 *.pyc
 *.pdf
-.streamlit
+secrets.toml
 *.txt
