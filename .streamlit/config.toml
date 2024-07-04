@@ -4,3 +4,6 @@ enableCORS = false
 
 [theme]
 base="dark"
+
+[client]
+toolbarMode = "minimal"
