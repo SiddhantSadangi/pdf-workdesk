@@ -26,11 +26,6 @@ try:
     **2,4:** pages 2 and 4  
     **1-3,5:** pages 1 to 3 and 5"""
 
-    # @st.cache_resource
-    # def local_css(file_name):
-    #     with open(file_name) as f:
-    #         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
     st.set_page_config(
         page_title="PDF WorkDesk",
         page_icon="📄",
@@ -42,8 +37,6 @@ try:
         },
         layout="wide",
     )
-
-    # local_css("style.css")
 
     # ---------- HEADER ----------
     st.title("📄 PDF WorkDesk!")
