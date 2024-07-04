@@ -31,7 +31,9 @@ Your feedback and contributions can help shape the future of PDF WorkDesk. If yo
 This app is based on [pypdf](https://github.com/py-pdf/pypdf) and basically provides a UI for non-technical users to use supported features of pypdf. Thanks to the pypdf team 🫶  
 Also, thanks as usual to the team behind and the community surrounding [Streamlit](https://streamlit.io/) 🎈  
 
-Special thanks to [Pierre-Louis BESCOND](https://github.com/pierrelouisbescond) for contributing the PDF to Word conversion code 🙏
+Special thanks to the below individuals for their contributions:
+* [Pierre-Louis BESCOND](https://github.com/pierrelouisbescond) for contributing the PDF to Word conversion code 
+* [Tomasz Hasiów](https://discuss.streamlit.io/u/TomJohn/summary) for his help with forcing dark-mode and introducing me to CSS injection
 
 Finally, to all open-source projects out there used either directly or indirectly 🙇  
 
