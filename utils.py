@@ -160,7 +160,7 @@ def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
         )
         pdf_viewer(
             f"unprotected_{session_state['name']}",
-            height=400 if key == "main" else 250,
+            height=600 if key == "main" else 250,
             key=random(),
         )
     else:
@@ -170,7 +170,7 @@ def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
 def handle_unencrypted_pdf(pdf: bytes, key: str) -> None:
     pdf_viewer(
         pdf,
-        height=400 if key == "main" else 250,
+        height=600 if key == "main" else 250,
         key=random(),
     )
 
@@ -198,13 +198,14 @@ def preview_pdf(
 ) -> None:
     with contextlib.suppress(NameError):
         if key == "main":
-            with st.expander("📄 **Preview**", expanded=bool(pdf)):
+            lcol, rcol = st.columns([2, 1])
+            with lcol.expander("📄 **Preview**", expanded=bool(pdf)):
                 if reader.is_encrypted:
                     handle_encrypted_pdf(reader, password, key)
                 else:
                     handle_unencrypted_pdf(pdf, key)
 
-            with st.expander("🗄️ **Metadata**"):
+            with rcol.expander("🗄️ **Metadata**"):
                 display_metadata(reader)
         elif reader.is_encrypted:
             handle_encrypted_pdf(reader, password, key)
