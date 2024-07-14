@@ -161,7 +161,6 @@ def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
         pdf_viewer(
             f"unprotected_{session_state['name']}",
             height=400 if key == "main" else 250,
-            width=300,
             key=random(),
         )
     else:
@@ -172,7 +171,6 @@ def handle_unencrypted_pdf(pdf: bytes, key: str) -> None:
     pdf_viewer(
         pdf,
         height=400 if key == "main" else 250,
-        width=300,
         key=random(),
     )
 

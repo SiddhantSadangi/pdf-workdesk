@@ -15,7 +15,7 @@ try:
 
     import utils
 
-    VERSION = "0.4.2"
+    VERSION = "0.5.0"
 
     PAGE_STR_HELP = """
     Format
@@ -59,7 +59,7 @@ try:
     # ---------- SIDEBAR ----------
     with st.sidebar:
         with st.expander("✅ Supported operations"):
-            st.info(
+            st.write(
                 "* Upload from disk/URL\n"
                 "* Preview content/metadata\n"
                 "* Extract text/images\n"
@@ -69,17 +69,6 @@ try:
                 "* Convert PDF to Word\n"
                 "* Reduce PDF size\n"
             )
-
-        try:
-            (
-                pdf,
-                reader,
-                session_state["password"],
-                session_state["is_encrypted"],
-            ) = utils.load_pdf(key="main")
-
-        except FileNotDecryptedError:
-            pdf = "password_required"
 
         with open("sidebar.html", "r", encoding="UTF-8") as sidebar_file:
             sidebar_html = sidebar_file.read().replace("{VERSION}", VERSION)
@@ -126,6 +115,17 @@ try:
     # TODO: Extract attachments (https://pypdf.readthedocs.io/en/stable/user/extract-attachments.html)
     # TODO: Undo last operation
     # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
+
+    try:
+        (
+            pdf,
+            reader,
+            session_state["password"],
+            session_state["is_encrypted"],
+        ) = utils.load_pdf(key="main")
+
+    except FileNotDecryptedError:
+        pdf = "password_required"
 
     if pdf == "password_required":
         st.error("PDF is password protected. Please enter the password to proceed.")
@@ -486,9 +486,6 @@ try:
                 file_name=f"{filename}_reduced.pdf",
                 use_container_width=True,
             )
-
-    else:
-        st.info("👈 Upload a PDF to start")
 
 except Exception as e:
     st.error(
