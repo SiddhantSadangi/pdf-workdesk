@@ -14,7 +14,7 @@ PDF WorkDesk is designed to be a user-friendly, lightweight tool that empowers y
 
 - **Upload PDFs**: Choose files from your disk or load them directly via URL.
 - **Preview PDFs**: Instantly view your PDF's contents and metadata.
-- **Extract Data**: Seamlessly extract text and images from your documents.
+- **Extract Data**: Seamlessly extract text, images, and tables from your documents.
 - **Secure PDFs**: Encrypt or decrypt your PDFs for added security.
 - **Modify PDFs**: Rotate, resize, merge, or convert PDFs to Word with simple clicks.
 - **Optimize Size**: Reduce your PDF's file size without compromising quality.

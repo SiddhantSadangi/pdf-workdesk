@@ -15,16 +15,7 @@ try:
 
     import utils
 
-    VERSION = "0.5.0"
-
-    PAGE_STR_HELP = """
-    Format
-    ------
-    **all:** all pages  
-    **2:** 2nd page  
-    **1-3:** pages 1 to 3  
-    **2,4:** pages 2 and 4  
-    **1-3,5:** pages 1 to 3 and 5"""
+    VERSION = "0.6.0"
 
     st.set_page_config(
         page_title="PDF WorkDesk",
@@ -62,11 +53,11 @@ try:
             st.write(
                 "* Upload from disk/URL\n"
                 "* Preview content/metadata\n"
-                "* Extract text/images\n"
+                "* Extract text/images/tables\n"
+                "* Convert PDF to Word\n"
                 "* Add/remove password\n"
                 "* Rotate/resize PDF\n"
                 "* Merge PDFs\n"
-                "* Convert PDF to Word\n"
                 "* Reduce PDF size\n"
             )
 
@@ -135,12 +126,10 @@ try:
         with lcol.expander(label="🔍 Extract text"):
             extract_text_lcol, extract_text_rcol = st.columns(2)
 
-            page_numbers_str = extract_text_lcol.text_input(
-                "Pages to extract test from?",
-                placeholder="all",
-                help=PAGE_STR_HELP,
+            page_numbers_str = utils.select_pages(
+                container=extract_text_lcol,
                 key="extract_text_pages",
-            ).lower()
+            )
 
             mode = extract_text_rcol.radio(
                 "Extraction mode",
@@ -168,12 +157,10 @@ try:
                         )
 
         with rcol.expander(label="️🖼️ Extract images"):
-            if page_numbers_str := st.text_input(
-                "Pages to extract images from?",
-                placeholder="all",
-                help=PAGE_STR_HELP,
+            if page_numbers_str := utils.select_pages(
+                container=st,
                 key="extract_image_pages",
-            ).lower():
+            ):
                 try:
                     images = utils.extract_images(reader, page_numbers_str)
                 except (IndexError, ValueError):
@@ -184,6 +171,35 @@ try:
                             st.image(data, caption=name)
                     else:
                         st.info("No images found")
+
+        with lcol.expander("📊 Extract table"):
+            if page_numbers_str := utils.select_pages(
+                container=st,
+                key="extract_table_pages",
+            ):
+                utils.extract_tables(
+                    session_state["file"],
+                    page_numbers_str,
+                )
+
+        with rcol.expander("🔄️ Convert to Word"):
+            st.caption("Takes ~1 second/page. Will remove password if present")
+
+            if st.button("Convert PDF to Word", use_container_width=True):
+                cv = Converter(stream=pdf, password=session_state.password)
+                docx_stream = BytesIO()
+                cv.convert(docx_stream, start=0, end=None)
+                cv.close()
+
+                docx_stream.seek(0)
+
+                st.download_button(
+                    "📥 Download Word document",
+                    data=docx_stream,
+                    file_name=f"{session_state['name'][:-4]}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                )
 
         with lcol.expander(
             f"🔐 {'Change' if session_state['is_encrypted'] else 'Add'} password"
@@ -377,25 +393,6 @@ try:
                         file_name="merged.pdf",
                         use_container_width=True,
                     )
-
-        with rcol.expander("🔄️ Convert to Word"):
-            st.caption("Takes ~1 second/page. Will remove password if present")
-
-            if st.button("Convert PDF to Word", use_container_width=True):
-                cv = Converter(stream=pdf, password=session_state.password)
-                docx_stream = BytesIO()
-                cv.convert(docx_stream, start=0, end=None)
-                cv.close()
-
-                docx_stream.seek(0)
-
-                st.download_button(
-                    "📥 Download Word document",
-                    data=docx_stream,
-                    file_name=f"{session_state['name'][:-4]}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True,
-                )
 
         with st.expander("🤏 Reduce PDF size"):
             # TODO: Add password back to converted PDF if original was protected
