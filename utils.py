@@ -314,7 +314,7 @@ def extract_images(reader: PdfReader.pages, page_numbers_str: str = "all") -> st
 
 def extract_tables(file, page_numbers_str):
     st.caption(
-        "Adjust vertical and horizontal strategies for better extraction. Read details abot the strategies [here](https://github.com/jsvine/pdfplumber?tab=readme-ov-file#table-extraction-strategies)."
+        "Adjust vertical and horizontal strategies for better extraction. Read details about the strategies [here](https://github.com/jsvine/pdfplumber?tab=readme-ov-file#table-extraction-strategies)."
     )
     col0, col1 = st.columns(2)
     vertical_strategy = col0.selectbox(
