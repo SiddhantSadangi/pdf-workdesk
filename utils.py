@@ -7,6 +7,7 @@ from random import random
 from typing import Callable, Dict, Literal, Optional, Tuple, Union
 
 import pandas as pd
+import pdfplumber
 import requests
 import streamlit as st
 from PIL import Image
@@ -15,6 +16,22 @@ from pypdf.errors import PdfReadError, PdfStreamError
 from streamlit import session_state
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from streamlit_pdf_viewer import pdf_viewer
+
+
+def select_pages(container, key: str):
+    return container.text_input(
+        "Pages to extract from?",
+        placeholder="all",
+        help="""
+    Format
+    ------
+    **all:** all pages  
+    **2:** 2nd page  
+    **1-3:** pages 1 to 3  
+    **2,4:** pages 2 and 4  
+    **1-3,5:** pages 1 to 3 and 5""",
+        key=key,
+    ).lower()
 
 
 @st.cache_data
@@ -293,6 +310,62 @@ def extract_images(reader: PdfReader.pages, page_numbers_str: str = "all") -> st
             )
 
     return images
+
+
+def extract_tables(file, page_numbers_str):
+    st.caption(
+        "Adjust vertical and horizontal strategies for better extraction. Read details abot the strategies [here](https://github.com/jsvine/pdfplumber?tab=readme-ov-file#table-extraction-strategies)."
+    )
+    col0, col1 = st.columns(2)
+    vertical_strategy = col0.selectbox(
+        "Vertical strategy",
+        ["lines", "lines_strict", "text"],
+        index=2,
+    )
+    horizontal_strategy = col1.selectbox(
+        "Horizontal strategy",
+        ["lines", "lines_strict", "text"],
+        index=2,
+    )
+
+    header = st.checkbox("Header")
+
+    first_row_index = 1 if header else 0
+
+    with pdfplumber.open(
+        BytesIO(file) if isinstance(file, bytes) else file,
+        password=session_state["password"],
+    ) as table_pdf:
+        if page_numbers_str == "all":
+            for page in table_pdf.pages:
+                for table in page.extract_tables(
+                    {
+                        "vertical_strategy": vertical_strategy,
+                        "horizontal_strategy": horizontal_strategy,
+                    }
+                ):
+                    st.write(
+                        pd.DataFrame(
+                            table[first_row_index:],
+                            columns=table[0] if header else None,
+                        )
+                    )
+        else:
+            pages = parse_page_numbers(page_numbers_str)
+            for page in pages:
+                for page in table_pdf.pages[page : page + 1]:
+                    for table in page.extract_tables(
+                        {
+                            "vertical_strategy": vertical_strategy,
+                            "horizontal_strategy": horizontal_strategy,
+                        }
+                    ):
+                        st.write(
+                            pd.DataFrame(
+                                table[first_row_index:],
+                                columns=table[0] if header else None,
+                            )
+                        )
 
 
 def decrypt_pdf(reader: PdfReader, password: str, filename: str) -> None:

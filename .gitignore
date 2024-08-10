@@ -6,3 +6,4 @@
 *.pdf
 secrets.toml
 *.txt
+doc_converter.py
