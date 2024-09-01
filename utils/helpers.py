@@ -10,6 +10,7 @@ import pandas as pd
 import pdfplumber
 import requests
 import streamlit as st
+from pdf2docx import Converter
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.errors import PdfReadError, PdfStreamError
@@ -447,3 +448,14 @@ def compress_pdf(pdf: bytes, password: str) -> bytes:
     bytes_stream.seek(0)
 
     return bytes_stream.getvalue()
+
+
+@st.cache_data
+def convert_pdf_to_word(pdf):
+    cv = Converter(stream=pdf, password=session_state.password)
+    docx_stream = BytesIO()
+    cv.convert(docx_stream, start=0, end=None)
+    cv.close()
+
+    docx_stream.seek(0)
+    return docx_stream
