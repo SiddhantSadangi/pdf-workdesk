@@ -1,33 +1,18 @@
-import streamlit as st
-
 try:
     import os
     import sys
     import traceback
     from io import BytesIO
 
-    from pdf2docx import Converter
+    import streamlit as st
     from pypdf import PaperSize, PdfReader, PdfWriter, Transformation
     from pypdf.errors import FileNotDecryptedError
-    from st_social_media_links import SocialMediaIcons
     from streamlit import session_state
     from streamlit_pdf_viewer import pdf_viewer
 
-    import utils
+    from utils import helpers, init_session_states, page_config, render_sidebar
 
-    VERSION = "0.6.0"
-
-    st.set_page_config(
-        page_title="PDF WorkDesk",
-        page_icon="📄",
-        menu_items={
-            "About": f"PDF WorkDesk v{VERSION}  "
-            f"\nDeveloper contact: [Siddhant Sadangi](mailto:siddhant.sadangi@gmail.com)",
-            "Report a Bug": "https://github.com/SiddhantSadangi/pdf-workdesk/issues/new",
-            "Get help": None,
-        },
-        layout="wide",
-    )
+    page_config.set()
 
     # ---------- HEADER ----------
     st.title("📄 PDF WorkDesk!")
@@ -35,73 +20,10 @@ try:
         "User-friendly, lightweight, and open-source tool to preview and extract content and metadata from PDFs, add or remove passwords, modify, merge, convert and compress PDFs."
     )
 
-    # ---------- INIT SESSION STATES ----------
-    session_state["decrypted_filename"] = (
-        None
-        if "decrypted_filename" not in session_state
-        else session_state["decrypted_filename"]
-    )
-    session_state["password"] = (
-        "" if "password" not in session_state else session_state["password"]
-    )
-    session_state["is_encrypted"] = (
-        False if "is_encrypted" not in session_state else session_state["is_encrypted"]
-    )
-    # ---------- SIDEBAR ----------
-    with st.sidebar:
-        with st.expander("✅ Supported operations"):
-            st.write(
-                "* Upload from disk/URL\n"
-                "* Preview content/metadata\n"
-                "* Extract text/images/tables\n"
-                "* Convert PDF to Word\n"
-                "* Add/remove password\n"
-                "* Rotate/resize PDF\n"
-                "* Merge PDFs\n"
-                "* Reduce PDF size\n"
-            )
+    init_session_states.init()
 
-        with open("sidebar.html", "r", encoding="UTF-8") as sidebar_file:
-            sidebar_html = sidebar_file.read().replace("{VERSION}", VERSION)
+    render_sidebar.render()
 
-        st.components.v1.html(sidebar_html, height=247)
-
-        st.html(
-            """
-            <div style="text-align:center; font-size:14px; color:lightgrey">
-                <hr style="margin-bottom: 6%; margin-top: 0%;">
-                Share the ❤️ on social media
-            </div>"""
-        )
-
-        social_media_links = [
-            "https://www.facebook.com/sharer/sharer.php?kid_directed_site=0&sdk=joey&u=https%3A%2F%2Fpdfworkdesk.streamlit.app%2F&display=popup&ref=plugin&src=share_button",
-            "https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpdfworkdesk.streamlit.app%2F",
-            "https://x.com/intent/tweet?original_referer=https%3A%2F%2Fpdfworkdesk.streamlit.app%2F&ref_src=twsrc%5Etfw%7Ctwcamp%5Ebuttonembed%7Ctwterm%5Eshare%7Ctwgr%5E&text=Check%20out%20this%20open-source%20PDF-editing%20Streamlit%20app%21&url=https%3A%2F%2Fpdfworkdesk.streamlit.app%2F",
-        ]
-
-        social_media_icons = SocialMediaIcons(
-            social_media_links, colors=["lightgray"] * len(social_media_links)
-        )
-
-        social_media_icons.render(sidebar=True)
-
-        st.html(
-            """
-            <div style="text-align:center; font-size:12px; color:lightgrey">
-                <hr style="margin-bottom: 6%; margin-top: 6%;">
-                <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
-                    <img alt="Creative Commons License" style="border-width:0"
-                        src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
-                </a><br><br>
-                This work is licensed under a <b>Creative Commons
-                    Attribution-NonCommercial-ShareAlike 4.0 International License</b>.<br>
-                You can modify and build upon this work non-commercially. All derivatives should be
-                credited to Siddhant Sadangi and
-                be licenced under the same terms.
-            </div>
-        """
-        )
     # ---------- OPERATIONS ----------
     # TODO: Extract attachments (https://pypdf.readthedocs.io/en/stable/user/extract-attachments.html)
     # TODO: Undo last operation
@@ -113,7 +35,7 @@ try:
             reader,
             session_state["password"],
             session_state["is_encrypted"],
-        ) = utils.load_pdf(key="main")
+        ) = helpers.load_pdf(key="main")
 
     except FileNotDecryptedError:
         pdf = "password_required"
@@ -122,11 +44,10 @@ try:
         st.error("PDF is password protected. Please enter the password to proceed.")
     elif pdf:
         lcol, rcol = st.columns(2)
-
         with lcol.expander(label="🔍 Extract text"):
             extract_text_lcol, extract_text_rcol = st.columns(2)
 
-            page_numbers_str = utils.select_pages(
+            page_numbers_str = helpers.select_pages(
                 container=extract_text_lcol,
                 key="extract_text_pages",
             )
@@ -140,7 +61,7 @@ try:
 
             if page_numbers_str:
                 try:
-                    text = utils.extract_text(reader, page_numbers_str, mode)
+                    text = helpers.extract_text(reader, page_numbers_str, mode)
                 except (IndexError, ValueError):
                     st.error("Specified pages don't exist. Check the format.", icon="⚠️")
                 else:
@@ -157,12 +78,12 @@ try:
                         )
 
         with rcol.expander(label="️🖼️ Extract images"):
-            if page_numbers_str := utils.select_pages(
+            if page_numbers_str := helpers.select_pages(
                 container=st,
                 key="extract_image_pages",
             ):
                 try:
-                    images = utils.extract_images(reader, page_numbers_str)
+                    images = helpers.extract_images(reader, page_numbers_str)
                 except (IndexError, ValueError):
                     st.error("Specified pages don't exist. Check the format.", icon="⚠️")
                 else:
@@ -173,11 +94,11 @@ try:
                         st.info("No images found")
 
         with lcol.expander("📊 Extract table"):
-            if page_numbers_str := utils.select_pages(
+            if page_numbers_str := helpers.select_pages(
                 container=st,
                 key="extract_table_pages",
             ):
-                utils.extract_tables(
+                helpers.extract_tables(
                     session_state["file"],
                     page_numbers_str,
                 )
@@ -186,16 +107,9 @@ try:
             st.caption("Takes ~1 second/page. Will remove password if present")
 
             if st.button("Convert PDF to Word", use_container_width=True):
-                cv = Converter(stream=pdf, password=session_state.password)
-                docx_stream = BytesIO()
-                cv.convert(docx_stream, start=0, end=None)
-                cv.close()
-
-                docx_stream.seek(0)
-
                 st.download_button(
                     "📥 Download Word document",
-                    data=docx_stream,
+                    data=helpers.convert_pdf_to_word(pdf),
                     file_name=f"{session_state['name'][:-4]}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     use_container_width=True,
@@ -369,7 +283,7 @@ try:
                 "Second PDF will be appended to the first. Passwords will be removed from both."
             )
             # TODO: Add more merge options (https://pypdf.readthedocs.io/en/stable/user/merging-pdfs.html#showing-more-merging-options)
-            pdf_to_merge, reader_to_merge, *_ = utils.load_pdf(key="merge")
+            pdf_to_merge, reader_to_merge, *_ = helpers.load_pdf(key="merge")
 
             if st.button(
                 "➕ Merge PDFs", disabled=(not pdf_to_merge), use_container_width=True
@@ -419,7 +333,7 @@ try:
                 )
 
                 if remove_images or remove_duplication:
-                    pdf_small = utils.remove_images(
+                    pdf_small = helpers.remove_images(
                         pdf,
                         remove_images=remove_images,
                         password=session_state.password,
@@ -440,7 +354,7 @@ try:
                         value=50,
                         disabled=remove_images,
                     )
-                    pdf_small = utils.reduce_image_quality(
+                    pdf_small = helpers.reduce_image_quality(
                         pdf_small,
                         quality,
                         password=session_state.password,
@@ -450,7 +364,7 @@ try:
                     "Lossless compression",
                     help="Compress PDF without losing quality",
                 ):
-                    pdf_small = utils.compress_pdf(
+                    pdf_small = helpers.compress_pdf(
                         pdf_small, password=session_state.password
                     )
 
@@ -462,7 +376,7 @@ try:
 
             with mcol:
                 st.caption(f"Original size: {original_size / 1024:.2f} KB")
-                utils.preview_pdf(
+                helpers.preview_pdf(
                     reader,
                     pdf,
                     key="other",
@@ -470,7 +384,7 @@ try:
                 )
             with rcol:
                 st.caption(f"Reduced size: {reduced_size / 1024:.2f} KB")
-                utils.preview_pdf(
+                helpers.preview_pdf(
                     PdfReader(BytesIO(pdf_small)),
                     pdf_small,
                     key="other",
