@@ -18,7 +18,7 @@ def render():
                 "* Reduce PDF size\n"
             )
 
-        with open("sidebar.html", "r", encoding="UTF-8") as sidebar_file:
+        with open("assets/sidebar.html", "r", encoding="UTF-8") as sidebar_file:
             sidebar_html = sidebar_file.read().replace("{VERSION}", __version__)
 
         st.components.v1.html(sidebar_html, height=247)
