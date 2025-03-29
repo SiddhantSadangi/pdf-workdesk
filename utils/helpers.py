@@ -14,6 +14,9 @@ from pdf2docx import Converter
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.errors import PdfReadError, PdfStreamError
+from reportlab.lib.colors import red
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from streamlit import session_state
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from streamlit_pdf_viewer import pdf_viewer
@@ -459,3 +462,45 @@ def convert_pdf_to_word(pdf):
 
     docx_stream.seek(0)
     return docx_stream
+
+
+@st.cache_data
+def watermark_pdf(
+    pdf: bytes,
+    stamp_label: str,
+    stamp_size: int,
+) -> None:
+    # Create a PDF with a watermark label
+    packet = BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica", stamp_size)
+    can.setFillColor(red)
+    can.saveState()
+    # Add multiple diagonal lines of watermark text
+    step_x = 150  # Horizontal spacing between watermarks
+    step_y = 100  # Vertical spacing between watermarks
+    for x in range(-100, int(letter[0]) + 100, step_x):
+        for y in range(-100, int(letter[1]) + 100, step_y):
+            can.saveState()
+            can.translate(x, y)
+            can.rotate(45)
+            can.drawCentredString(0, 0, stamp_label)
+            can.restoreState()
+    can.save()
+    # Save the watermark PDF
+    packet.seek(0)
+    with open("watermark_canva.pdf", "wb") as f:
+        f.write(packet.read())
+
+    # merge the watermark with each page of the input PDF
+    writer = PdfWriter()
+    reader = PdfReader(BytesIO(pdf))
+    watermark_reader = PdfReader("watermark_canva.pdf")
+    watermark_page = watermark_reader.pages[0]
+    for page in reader.pages:
+        page.merge_page(watermark_page)
+        writer.add_page(page)
+
+    # Write the output PDF
+    with open("watermarked.pdf", "wb") as f:
+        writer.write(f)

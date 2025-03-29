@@ -16,6 +16,7 @@ def render():
                 "* Rotate/resize PDF\n"
                 "* Merge PDFs\n"
                 "* Reduce PDF size\n"
+                "* Add watermark\n"
             )
 
         with open("assets/sidebar.html", "r", encoding="UTF-8") as sidebar_file:
