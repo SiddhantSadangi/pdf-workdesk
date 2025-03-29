@@ -247,6 +247,25 @@ try:
                         file_name=f"{session_state['name'].rsplit('.')[0]}_scaled_{new_size}_{scale_content}x.pdf",
                         use_container_width=True,
                     )
+        # create a watermark
+        with lcol.expander("©️ Add watermark"):
+            text_watermark = st.text_input("Enter watermark text")
+            size_watermark = st.slider("Font size", min_value=6, max_value=30, value=12)
+
+            helpers.watermark_pdf(
+                pdf=pdf,
+                stamp_label=text_watermark,
+                stamp_size=size_watermark,
+            )
+            pdf_viewer("watermarked.pdf", height=400, width=500)
+
+            st.download_button(
+                "📥 Download watermarked PDF",
+                data=open("watermarked.pdf", "rb"),
+                mime="application/pdf",
+                file_name="watermarked.pdf",
+                use_container_width=True,
+            )
 
         # with st.expander("©️ Add watermark"):
         # TODO: Add watermark (convert pdf to image and then back to pdf with watermark)
