@@ -14,8 +14,6 @@ from pdf2docx import Converter
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.errors import PdfReadError, PdfStreamError
-from reportlab.lib import colors
-from reportlab.lib.colors import red, transparent
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from streamlit import session_state
