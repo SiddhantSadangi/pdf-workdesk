@@ -14,7 +14,8 @@ from pdf2docx import Converter
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.errors import PdfReadError, PdfStreamError
-from reportlab.lib.colors import red
+from reportlab.lib import colors
+from reportlab.lib.colors import red, transparent
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from streamlit import session_state
@@ -469,12 +470,20 @@ def watermark_pdf(
     pdf: bytes,
     stamp_label: str,
     stamp_size: int,
-) -> None:
+    stamp_color: str,
+    stamp_transparency: float,
+) -> bytes:
     # Create a PDF with a watermark label
     packet = BytesIO()
     can = canvas.Canvas(packet, pagesize=letter)
     can.setFont("Helvetica", stamp_size)
-    can.setFillColor(red)
+    # convert color from hex to color from reportlab
+    stamp_color = stamp_color.lstrip("#")
+    # convert color from tuple to RGB color
+    color = tuple(int(stamp_color[i : i + 2], 16) / 256 for i in (0, 2, 4))
+    # apply transparency
+    color = (*color, stamp_transparency)
+    can.setFillColorRGB(*color)
     can.saveState()
     # Add multiple diagonal lines of watermark text
     step_x = 150  # Horizontal spacing between watermarks
@@ -487,20 +496,21 @@ def watermark_pdf(
             can.drawCentredString(0, 0, stamp_label)
             can.restoreState()
     can.save()
-    # Save the watermark PDF
+    # Save the watermark PDF to BytesIO and use bytes to merge
     packet.seek(0)
-    with open("watermark_canva.pdf", "wb") as f:
-        f.write(packet.read())
+    watermark_canvas = BytesIO(packet.read())
 
     # merge the watermark with each page of the input PDF
     writer = PdfWriter()
     reader = PdfReader(BytesIO(pdf))
-    watermark_reader = PdfReader("watermark_canva.pdf")
+    watermark_reader = PdfReader(watermark_canvas)
     watermark_page = watermark_reader.pages[0]
     for page in reader.pages:
         page.merge_page(watermark_page)
         writer.add_page(page)
 
-    # Write the output PDF
-    with open("watermarked.pdf", "wb") as f:
-        writer.write(f)
+    # Write to byte_stream to return bytes
+    with BytesIO() as fp:
+        writer.write(fp)
+        fp.seek(0)
+        return fp.read()
