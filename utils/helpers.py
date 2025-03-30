@@ -478,7 +478,7 @@ def watermark_pdf(
     # convert color from hex to color from reportlab
     stamp_color = stamp_color.lstrip("#")
     # convert color from tuple to RGB color
-    color = tuple(int(stamp_color[i : i + 2], 16) / 256 for i in (0, 2, 4))
+    color = tuple(int(stamp_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
     # apply transparency
     color = (*color, stamp_transparency)
     can.setFillColorRGB(*color)
