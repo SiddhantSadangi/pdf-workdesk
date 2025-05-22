@@ -248,35 +248,6 @@ try:
                         use_container_width=True,
                     )
 
-        # with st.expander("©️ Add watermark"):
-        # TODO: Add watermark (convert pdf to image and then back to pdf with watermark)
-        #     # TODO: Transform watermark before adding (https://pypdf.readthedocs.io/en/stable/user/add-watermark.html#stamp-overlay-watermark-underlay)
-
-        #     col1, col2 = st.columns(2)
-
-        #     image = col1.file_uploader(
-        #         "Upload image",
-        #         type=["png", "jpg", "jpeg", "webp", "bmp"],
-        #     )
-
-        #     if image:
-        #         col2.image(image, caption="Uploaded image", use_column_width=True)
-
-        #         utils.watermark_img(
-        #             reader,
-        #             image,
-        #         )
-
-        #         pdf_viewer("watermarked.pdf", height=400, width=500)
-
-        #         st.download_button(
-        #             "📥 Download watermarked PDF",
-        #             data=open("watermarked.pdf", "rb"),
-        #             mime="application/pdf",
-        #             file_name="watermarked.pdf",
-        #             use_container_width=True,
-        #         )
-
         with lcol.expander("➕ Merge PDFs"):
             # TODO: Add password back to converted PDF if original was protected
             st.caption(
@@ -307,6 +278,37 @@ try:
                         file_name="merged.pdf",
                         use_container_width=True,
                     )
+        # create a watermark
+        with rcol.expander("©️ Add watermark"):
+            if text_watermark := st.text_input(
+                "Enter watermark text",
+                placeholder="PDF-Workdesk Watermark",
+            ):
+                size_watermark = st.slider(
+                    "Font size", min_value=6, max_value=30, value=12
+                )
+                lcol, rcol_inner = st.columns([1, 3])
+                color = lcol.color_picker("Color", "#F90004")
+                transparency = rcol_inner.slider(
+                    "Transparency", min_value=0.0, max_value=1.0, value=0.8
+                )
+
+                watermarked_pdf = helpers.watermark_pdf(
+                    pdf=pdf,
+                    stamp_label=text_watermark,
+                    stamp_size=size_watermark,
+                    stamp_color=color,
+                    stamp_transparency=transparency,
+                )
+                pdf_viewer(watermarked_pdf, height=400, width=500)
+
+                st.download_button(
+                    "📥 Download watermarked PDF",
+                    data=watermarked_pdf,
+                    mime="application/pdf",
+                    file_name="watermarked.pdf",
+                    use_container_width=True,
+                )
 
         with st.expander("🤏 Reduce PDF size"):
             # TODO: Add password back to converted PDF if original was protected
@@ -317,7 +319,7 @@ try:
             lcol, mcol, rcol = st.columns(3)
 
             with lcol:
-                remove_duplication = st.checkbox(
+                remove_duplication = st.toggle(
                     "Remove duplication",
                     help="""
                     Some PDF documents contain the same object multiple times.  
@@ -327,7 +329,7 @@ try:
                     """,
                 )
 
-                remove_images = st.checkbox(
+                remove_images = st.toggle(
                     "Remove images",
                     help="Remove images from the PDF. Will also remove duplication.",
                 )
@@ -339,7 +341,7 @@ try:
                         password=session_state.password,
                     )
 
-                if st.checkbox(
+                if st.toggle(
                     "Reduce image quality",
                     help="""
                     Reduce the quality of images in the PDF. Will also remove duplication.  
@@ -360,7 +362,7 @@ try:
                         password=session_state.password,
                     )
 
-                if st.checkbox(
+                if st.toggle(
                     "Lossless compression",
                     help="Compress PDF without losing quality",
                 ):

@@ -14,6 +14,8 @@ from pdf2docx import Converter
 from PIL import Image
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.errors import PdfReadError, PdfStreamError
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from streamlit import session_state
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from streamlit_pdf_viewer import pdf_viewer
@@ -459,3 +461,111 @@ def convert_pdf_to_word(pdf):
 
     docx_stream.seek(0)
     return docx_stream
+
+
+def hex_to_rgba(hex_color: str) -> Tuple[float, float, float]:
+    """
+    Convert a hexadecimal color code to an RGB color tuple.
+
+    Args:
+        hex_color (str): The hexadecimal color code.
+
+    Returns:
+        Tuple[float, float, float]: The RGB color tuple
+    """
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+
+def draw_watermark_grid(
+    can, stamp_label: str, step_x: int, step_y: int, width: float, height: float
+) -> None:
+    """
+    Draw a grid of watermarks on the given canvas.
+
+    Args:
+        can (canvas.Canvas): The canvas to draw the watermarks on.
+        stamp_label (str): The label to be displayed as the watermark.
+        step_x (int): The horizontal spacing between watermarks.
+        step_y (int): The vertical spacing between watermarks.
+        width (float): The width of the canvas.
+        height (float): The height of the canvas.
+
+    Returns:
+        None
+    """
+    for x in range(-100, int(width) + 100, step_x):
+        for y in range(-100, int(height) + 100, step_y):
+            can.saveState()
+            can.translate(x, y)
+            can.rotate(45)
+            can.drawCentredString(0, 0, stamp_label)
+            can.restoreState()
+
+
+def merge_watermark_into_pdf(pdf: bytes, watermark: BytesIO) -> bytes:
+    """
+    Merge a watermark into a PDF document.
+
+    Args:
+        pdf (bytes): The PDF document to merge the watermark into.
+        watermark (BytesIO): The watermark to merge into the PDF.
+
+    Returns:
+        bytes: The merged PDF document.
+    """
+    writer = PdfWriter()
+    reader = PdfReader(BytesIO(pdf))
+    watermark_reader = PdfReader(watermark)
+    watermark_page = watermark_reader.pages[0]
+    for page in reader.pages:
+        page.merge_page(watermark_page, over=False)
+        writer.add_page(page)
+    with BytesIO() as fp:
+        writer.write(fp)
+        fp.seek(0)
+        return fp.read()
+
+
+def create_watermark_canvas(
+    stamp_label: str, stamp_size: int, stamp_color: str, stamp_transparency: float
+) -> BytesIO:
+    """
+    Create a watermark canvas with the given label, size, color, and transparency.
+
+    Args:
+        stamp_label (str): The label to be displayed as the watermark.
+        stamp_size (int): The font size of the watermark.
+        stamp_color (str): The color of the watermark in hexadecimal format.
+        stamp_transparency (float): The transparency of the watermark.
+
+    Returns:
+        BytesIO: A BytesIO object containing the watermark canvas.
+    """
+    packet = BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica", stamp_size)
+    color = hex_to_rgba(stamp_color)
+    can.setFillColorRGB(*color)
+    can.setFillAlpha(stamp_transparency)
+    can.saveState()
+    draw_watermark_grid(
+        can, stamp_label, step_x=150, step_y=100, width=letter[0], height=letter[1]
+    )
+    can.save()
+    packet.seek(0)
+    return packet
+
+
+@st.cache_data
+def watermark_pdf(
+    pdf: bytes,
+    stamp_label: str,
+    stamp_size: int,
+    stamp_color: str,
+    stamp_transparency: float,
+) -> bytes:
+    watermark = create_watermark_canvas(
+        stamp_label, stamp_size, stamp_color, stamp_transparency
+    )
+    return merge_watermark_into_pdf(pdf, watermark)
