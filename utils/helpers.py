@@ -519,7 +519,7 @@ def merge_watermark_into_pdf(pdf: bytes, watermark: BytesIO) -> bytes:
     watermark_reader = PdfReader(watermark)
     watermark_page = watermark_reader.pages[0]
     for page in reader.pages:
-        page.merge_page(watermark_page)
+        page.merge_page(watermark_page, over=False)
         writer.add_page(page)
     with BytesIO() as fp:
         writer.write(fp)

@@ -11,7 +11,7 @@ Welcome to **PDF WorkDesk**, the ultimate open-source Streamlit app for all your
     </a>
 </p>
 
-## Why PDF WorkDesk? 🚀
+## Features 🚀
 
 PDF WorkDesk is designed to be a user-friendly, lightweight tool that empowers you to handle PDFs with ease and efficiency. Here's what you can do:
 
@@ -20,8 +20,8 @@ PDF WorkDesk is designed to be a user-friendly, lightweight tool that empowers y
 - **Extract Data**: Seamlessly extract text, images, and tables from your documents.
 - **Secure PDFs**: Encrypt or decrypt your PDFs for added security.
 - **Modify PDFs**: Rotate, resize, merge, or convert PDFs to Word with simple clicks.
-- **Optimize Size**: Reduce your PDF's file size without compromising quality.
 - **Watermark PDFs**: Add a label to watermark your PDFs.
+- **Reduce Size**: Reduce your PDF's file size without compromising quality.
 
 And the best part? It's completely **free**, **open-source**, and respects your privacy by not requiring any personal information! 🛡️
 
@@ -37,10 +37,11 @@ Your feedback and contributions can help shape the future of PDF WorkDesk. If yo
 This app is based on [pypdf](https://github.com/py-pdf/pypdf) and basically provides a UI for non-technical users to use supported features of pypdf. Thanks to the pypdf team 🫶  
 Also, thanks as usual to the team behind and the community surrounding [Streamlit](https://streamlit.io/) 🎈
 
-Special thanks to the below individuals for their contributions:
+Special thanks to the following individuals for their contributions:
 
 - [Pierre-Louis BESCOND](https://github.com/pierrelouisbescond) for contributing the PDF to Word conversion code
 - [Tomasz Hasiów](https://discuss.streamlit.io/u/TomJohn/summary) for his help with forcing dark-mode and introducing me to CSS injection
+- [Émilien Foissotte](https://github.com/Emilien-Foissotte) for implementing the watermark functionality
 
 Finally, to all open-source projects out there used either directly or indirectly 🙇
 
@@ -50,11 +51,14 @@ Love PDF WorkDesk? Here's how you can show your support:
 
 - **Star**: Give us a star on GitHub and help spread the word!
 - **Share**: Tell your friends and colleagues about us on social media.
-- **Donate**: Buy me a coffee and fuel further development!
+- **Donate**: Buy me a coffee or sponsor me on GitHub!
 
 <p align="center">
     <a href="https://www.buymeacoffee.com/siddhantsadangi" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;">
     </a>
+    <a href="https://github.com/sponsors/SiddhantSadangi" target="_blank"><img
+        src="https://img.shields.io/badge/Sponsor%20me%20on-GitHub-f34b7d?logo=github&style=flat"
+        alt="Sponsor me on GitHub" style="height: 26px !important;">
 </p>
 
 Thank you for supporting PDF WorkDesk! 🤗

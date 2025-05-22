@@ -25,6 +25,7 @@ try:
     render_sidebar.render()
 
     # ---------- OPERATIONS ----------
+    # TODO: Fragment all functions
     # TODO: Extract attachments (https://pypdf.readthedocs.io/en/stable/user/extract-attachments.html)
     # TODO: Undo last operation
     # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
@@ -249,10 +250,11 @@ try:
                     )
         # create a watermark
         with lcol.expander("©️ Add watermark"):
-            text_watermark = st.text_input("Enter watermark text")
-            if not text_watermark.strip():
-                st.warning("No watermark text provided, using default watermark.")
-                text_watermark = "PDF-Workdesk Watermark"
+            text_watermark = st.text_input(
+                "Enter watermark text",
+                placeholder="PDF-Workdesk Watermark",
+                value="PDF-Workdesk Watermark",
+            )
             size_watermark = st.slider("Font size", min_value=6, max_value=30, value=12)
             color = st.color_picker("Watermark color", "#F90004")
             transparency = st.slider(
@@ -276,7 +278,7 @@ try:
                 use_container_width=True,
             )
 
-        with lcol.expander("➕ Merge PDFs"):
+        with rcol.expander("➕ Merge PDFs"):
             # TODO: Add password back to converted PDF if original was protected
             st.caption(
                 "Second PDF will be appended to the first. Passwords will be removed from both."
