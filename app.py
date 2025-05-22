@@ -287,9 +287,9 @@ try:
                 size_watermark = st.slider(
                     "Font size", min_value=6, max_value=30, value=12
                 )
-                lcol, rcol = st.columns([1, 3])
+                lcol, rcol_inner = st.columns([1, 3])
                 color = lcol.color_picker("Color", "#F90004")
-                transparency = rcol.slider(
+                transparency = rcol_inner.slider(
                     "Transparency", min_value=0.0, max_value=1.0, value=0.8
                 )
 
