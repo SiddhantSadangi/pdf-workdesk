@@ -25,7 +25,6 @@ try:
     render_sidebar.render()
 
     # ---------- OPERATIONS ----------
-    # TODO: Fragment all functions
     # TODO: Extract attachments (https://pypdf.readthedocs.io/en/stable/user/extract-attachments.html)
     # TODO: Undo last operation
     # TODO: Update metadata (https://pypdf.readthedocs.io/en/stable/user/metadata.html)
