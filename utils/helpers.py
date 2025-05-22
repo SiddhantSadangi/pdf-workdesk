@@ -463,7 +463,7 @@ def convert_pdf_to_word(pdf):
     return docx_stream
 
 
-def hex_to_rgba(hex_color: str) -> Tuple[float, float, float]:
+def hex_to_rgb(hex_color: str) -> Tuple[float, float, float]:
     """
     Convert a hexadecimal color code to an RGB color tuple.
 
@@ -519,7 +519,7 @@ def merge_watermark_into_pdf(pdf: bytes, watermark: BytesIO) -> bytes:
     watermark_reader = PdfReader(watermark)
     watermark_page = watermark_reader.pages[0]
     for page in reader.pages:
-        page.merge_page(watermark_page, over=False)
+        page.merge_page(watermark_page)
         writer.add_page(page)
     with BytesIO() as fp:
         writer.write(fp)
@@ -545,7 +545,7 @@ def create_watermark_canvas(
     packet = BytesIO()
     can = canvas.Canvas(packet, pagesize=letter)
     can.setFont("Helvetica", stamp_size)
-    color = hex_to_rgba(stamp_color)
+    color = hex_to_rgb(stamp_color)
     can.setFillColorRGB(*color)
     can.setFillAlpha(stamp_transparency)
     can.saveState()

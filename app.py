@@ -290,7 +290,7 @@ try:
                 lcol, rcol_inner = st.columns([1, 3])
                 color = lcol.color_picker("Color", "#F90004")
                 transparency = rcol_inner.slider(
-                    "Transparency", min_value=0.0, max_value=1.0, value=0.8
+                    "Opacity", min_value=0.0, max_value=1.0, value=0.8
                 )
 
                 watermarked_pdf = helpers.watermark_pdf(
