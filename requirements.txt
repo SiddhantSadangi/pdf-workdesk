@@ -54,7 +54,7 @@ streamlit-pdf-viewer==0.0.21
 tenacity==9.0.0
 termcolor==2.5.0
 toml==0.10.2
-tornado==6.4.2
+tornado==6.5.1
 typing-extensions==4.13.0
 tzdata==2025.2
 urllib3==2.3.0
