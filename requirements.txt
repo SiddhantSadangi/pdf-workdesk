@@ -31,7 +31,7 @@ pdf2docx==0.5.8
 pdfminer-six==20250327
 pdfplumber==0.11.6
 pillow==11.1.0
-protobuf==5.29.4
+protobuf==5.29.5
 pyarrow==19.0.1
 pycparser==2.22 ; platform_python_implementation != 'PyPy'
 pydeck==0.9.1
