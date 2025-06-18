@@ -43,7 +43,7 @@ python-docx==1.1.2
 pytz==2025.2
 referencing==0.36.2
 reportlab==4.3.1
-requests==2.32.3
+requests==2.32.4
 rpds-py==0.24.0
 six==1.17.0
 smmap==5.0.2
