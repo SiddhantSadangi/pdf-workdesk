@@ -6,7 +6,7 @@ from utils.version import __version__
 
 def render():
     with st.sidebar:
-        with st.expander("✅ Supported operations"):
+        with st.expander("Supported operations"):
             st.write(
                 "* Upload from disk/URL\n"
                 "* Preview content/metadata\n"
@@ -21,7 +21,7 @@ def render():
         with open("assets/sidebar.html", "r", encoding="UTF-8") as sidebar_file:
             sidebar_html = sidebar_file.read().replace("{VERSION}", __version__)
 
-        st.components.v1.html(sidebar_html, height=290)
+        st.components.v1.html(sidebar_html, height=330)
 
         st.html(
             """
