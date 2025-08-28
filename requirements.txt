@@ -6,4 +6,5 @@ pypdf==6.0.0
 reportlab==4.4.3
 Requests==2.32.5
 st_social_media_links==0.1.5
-streamlit[pdf]==1.49.0
+streamlit==1.49.0
+streamlit-pdf==1.0.7
