@@ -8,7 +8,6 @@ try:
     from pypdf import PaperSize, PdfReader, PdfWriter, Transformation
     from pypdf.errors import FileNotDecryptedError
     from streamlit import session_state
-    from streamlit_pdf_viewer import pdf_viewer
 
     from utils import helpers, init_session_states, page_config, render_sidebar
 
@@ -190,7 +189,7 @@ try:
                 writer.write("rotated.pdf")
 
                 with open("rotated.pdf", "rb") as f:
-                    pdf_viewer(f.read(), height=250, width=300)
+                    st.pdf(f.read(), height=250)
                     st.download_button(
                         "📥 Download rotated PDF",
                         data=f,
@@ -239,7 +238,7 @@ try:
 
                 with open("scaled.pdf", "rb") as f:
                     st.caption("Content scaling preview")
-                    pdf_viewer(f.read(), height=250, width=300)
+                    st.pdf(f.read(), height=250)
                     st.download_button(
                         "📥 Download scaled PDF",
                         data=f,
@@ -266,10 +265,9 @@ try:
                     # TODO: Write to byte_stream
                     merger.write("merged.pdf")
 
-                    pdf_viewer(
+                    st.pdf(
                         open("merged.pdf", "rb").read(),
                         height=250,
-                        width=300,
                     )
                     st.download_button(
                         "📥 Download merged PDF",
@@ -300,7 +298,7 @@ try:
                     stamp_color=color,
                     stamp_transparency=transparency,
                 )
-                pdf_viewer(watermarked_pdf, height=400, width=500)
+                st.pdf(watermarked_pdf, height=400)
 
                 st.download_button(
                     "📥 Download watermarked PDF",

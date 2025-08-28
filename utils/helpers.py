@@ -18,7 +18,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from streamlit import session_state
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from streamlit_pdf_viewer import pdf_viewer
 
 
 def select_pages(container, key: str):
@@ -178,7 +177,7 @@ def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
             password,
             filename=session_state["decrypted_filename"],
         )
-        pdf_viewer(
+        st.pdf(
             f"unprotected_{session_state['name']}",
             height=600 if key == "main" else 250,
             key=str(random()),
@@ -188,7 +187,7 @@ def handle_encrypted_pdf(reader: PdfReader, password: str, key: str) -> None:
 
 
 def handle_unencrypted_pdf(pdf: bytes, key: str) -> None:
-    pdf_viewer(
+    st.pdf(
         pdf,
         height=600 if key == "main" else 250,
         key=str(random()),
