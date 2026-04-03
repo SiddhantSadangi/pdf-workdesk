@@ -6,4 +6,4 @@ pypdf<=7.0.0
 reportlab<=5.0.0
 Requests<=3.0.0
 st_social_media_links<=1.0.0
-streamlit<=2.0.0
+streamlit[pdf]<=2.0.0
